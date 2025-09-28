@@ -1,0 +1,32 @@
+package internal
+
+import "fmt"
+
+const defaultPort = 17001
+
+// WebSocketConfig 为 WebSocket 的相关配置。
+type WebSocketConfig struct {
+	Host            string // IP 地址，默认 0.0.0.0
+	Port            int    // 端口号，默认 17001
+	Network         string // 网络协议，默认 tcp4
+	EnableLocalMode bool   // 是自动获取 IP 地
+}
+
+func DefaultWebSocketConfig() *WebSocketConfig {
+	return &WebSocketConfig{
+		Host:    "0.0.0.0",
+		Port:    defaultPort,
+		Network: "tcp4",
+	}
+}
+
+func (cfg WebSocketConfig) Address() string {
+	if cfg.Network == "unix" {
+		// 如果是 unix，
+		// 那么启动方式为 unix domain socket，
+		// Host 为 file。
+		return cfg.Host
+	}
+
+	return fmt.Sprintf("%s:%d", cfg.Host, cfg.Port)
+}
