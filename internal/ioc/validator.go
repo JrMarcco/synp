@@ -12,6 +12,7 @@ var ValidatorFxOpt = fx.Module("validator", fx.Provide(InitValidator))
 
 func InitValidator() auth.Validator {
 	type config struct {
+		Issuer  string `mapstructure:"issuer"`
 		Private string `mapstructure:"private"`
 		Public  string `mapstructure:"public"`
 	}
@@ -21,7 +22,11 @@ func InitValidator() auth.Validator {
 		panic(err)
 	}
 
-	jwtManager, err := xjwt.NewEd25519ManagerBuilder[session.UserInfo](cfg.Private, cfg.Public).Build()
+	claimsCfg := xjwt.NewClaimsConfig(xjwt.WithIssuer(cfg.Issuer))
+
+	jwtManager, err := xjwt.NewEd25519ManagerBuilder[session.UserInfo](cfg.Private, cfg.Public).
+		ClaimsConfig(claimsCfg).
+		Build()
 	if err != nil {
 		panic(err)
 	}

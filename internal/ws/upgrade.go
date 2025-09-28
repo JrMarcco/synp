@@ -39,7 +39,7 @@ func (u *Upgrader) Upgrade(conn net.Conn) (session.Session, *compression.State, 
 		params := u.compressionConfig.ToParamters()
 		ext = &wsflate.Extension{Parameters: params}
 
-		u.logger.Info("[synp] compression enabled", zap.Any("params", params))
+		u.logger.Info("[synp-upgrader] compression enabled", zap.Any("params", params))
 	}
 
 	// var ui session.UserInfo
@@ -76,12 +76,12 @@ func (u *Upgrader) Upgrade(conn net.Conn) (session.Session, *compression.State, 
 				Params:  params,
 			}
 
-			u.logger.Info("[synp] successfully negotiated compression", zap.Any("negotiated_params", params))
+			u.logger.Info("[synp-upgrader] successfully negotiated compression", zap.Any("negotiated_params", params))
 			return sess, state, nil
 		}
 
 		state = &compression.State{Enabled: false}
-		u.logger.Warn("[synp] failed to negotiate compression, downgrade to no compression")
+		u.logger.Warn("[synp-upgrader] failed to negotiate compression, downgrade to no compression")
 	}
 
 	return sess, state, nil
@@ -106,14 +106,14 @@ func (u *Upgrader) extractToken(uri []byte) (string, error) {
 func (u *Upgrader) extractUserInfo(uri []byte) (session.UserInfo, error) {
 	token, err := u.extractToken(uri)
 	if err != nil {
-		u.logger.Error("[synp] failed to extract token from uri", zap.Error(err))
+		u.logger.Error("[synp-upgrader] failed to extract token from uri", zap.Error(err))
 		return session.UserInfo{}, err
 	}
 
 	var ui session.UserInfo
 	ui, err = u.validator.Validate(context.Background(), token)
 	if err != nil {
-		u.logger.Error("[synp] failed to validate token", zap.Error(err))
+		u.logger.Error("[synp-upgrader] failed to validate token", zap.Error(err))
 		return session.UserInfo{}, err
 	}
 	return ui, nil

@@ -4,18 +4,24 @@ import (
 	"context"
 	"errors"
 	"net"
+	"time"
 
+	"github.com/JrMarcco/synp/internal/pkg/limiter"
+	"github.com/cenkalti/backoff/v5"
 	"go.uber.org/zap"
 )
 
-type WebSocketServer struct {
+type Server struct {
 	name   string
-	config *WebSocketConfig
+	config *Config
 
 	upgrader Upgrader
 
-	ctx    context.Context
-	cancel context.CancelFunc
+	connLimiter *limiter.TokenLimiter
+	backoff     *backoff.ExponentialBackOff
+
+	ctx        context.Context
+	cancelFunc context.CancelFunc
 
 	listener net.Listener
 
@@ -23,7 +29,7 @@ type WebSocketServer struct {
 }
 
 // Start 启动 WebSocket 服务器。
-func (s *WebSocketServer) Start() error {
+func (s *Server) Start() error {
 	// 端口启用并监听 upgrade 请求，
 	// 完成 WebSocket 的初始化工作。
 	ln, err := net.Listen(s.config.Network, s.config.Address())
@@ -42,18 +48,33 @@ func (s *WebSocketServer) Start() error {
 }
 
 // acceptConn 接收 WebSocket 连接。
-func (s *WebSocketServer) acceptConn() {
+func (s *Server) acceptConn() {
 	for {
 		//TODO: 判断是否还接收新连接。
 
-		//TODO: 接收连接前先获取令牌。
+		// 接收连接前先获取令牌。
+		if !s.connLimiter.Acquire() {
+			next := s.backoff.NextBackOff()
+
+			s.logger.Warn(
+				"[synp-server] connection limit reached, reject new connection",
+				zap.String("step", "accept_conn"),
+				zap.Duration("next_backoff", next),
+			)
+			time.Sleep(next)
+			continue
+		}
+
+		// 成功获取令牌，重置退避策略。
+		s.backoff.Reset()
 
 		conn, err := s.listener.Accept()
 		if err != nil {
-			//TODO: 接收连接失败，归还令牌。
+			// 接收连接失败，归还令牌。
+			s.connLimiter.Release()
 
 			s.logger.Error(
-				"[synp] failed to accept connection",
+				"[synp-server] failed to accept connection",
 				zap.String("step", "accept_conn"),
 				zap.Error(err),
 			)
@@ -70,7 +91,7 @@ func (s *WebSocketServer) acceptConn() {
 				continue
 			}
 
-			// 这里要确保循环继续而不是意外退出。
+			// 确保循环继续而不是意外退出。
 			continue
 		}
 
@@ -81,15 +102,16 @@ func (s *WebSocketServer) acceptConn() {
 }
 
 // handleConn 处理 WebSocket 连接。
-func (s *WebSocketServer) handleConn(conn net.Conn) {
-	//TODO: 归还令牌。
+func (s *Server) handleConn(conn net.Conn) {
+	// 归还令牌。
+	defer s.connLimiter.Release()
 
 	// 关闭连接。
 	defer func() {
 		err := conn.Close()
 		if err != nil && !errors.Is(err, net.ErrClosed) {
 			s.logger.Warn(
-				"[synp] failed to close connection",
+				"[synp-server] failed to close connection",
 				zap.String("step", "handle_conn"),
 				zap.Error(err),
 			)
@@ -100,11 +122,28 @@ func (s *WebSocketServer) handleConn(conn net.Conn) {
 	_, _, err := s.upgrader.Upgrade(conn)
 	if err != nil {
 		s.logger.Error(
-			"[synp] failed to upgrade connection",
+			"[synp-server] failed to upgrade connection from HTTP to WebSocket",
 			zap.String("step", "handle_conn"),
 			zap.Error(err),
 		)
 		return
 	}
 
+}
+
+func (s *Server) Shutdown() error {
+	// 关闭限流器。
+	if err := s.connLimiter.Close(); err != nil {
+		s.logger.Error("[synp-server] failed to close connection limiter", zap.Error(err))
+		return err
+	}
+
+	s.cancelFunc()
+	return nil
+}
+
+func (s *Server) GracefulShutdown() error {
+
+	<-s.ctx.Done()
+	return s.Shutdown()
 }
