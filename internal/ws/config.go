@@ -1,8 +1,14 @@
-package internal
+package ws
 
-import "fmt"
+import (
+	"flag"
+	"fmt"
+)
 
-const defaultPort = 17001
+const (
+	defaultHost = "0.0.0.0"
+	defaultPort = 17001
+)
 
 // WebSocketConfig 为 WebSocket 的相关配置。
 type WebSocketConfig struct {
@@ -13,9 +19,12 @@ type WebSocketConfig struct {
 }
 
 func DefaultWebSocketConfig() *WebSocketConfig {
+	host := *flag.String("host", defaultHost, "WebSocket gateway host address")
+	port := *flag.Int("port", defaultPort, "WebSocket gateway port")
+
 	return &WebSocketConfig{
-		Host:    "0.0.0.0",
-		Port:    defaultPort,
+		Host:    host,
+		Port:    port,
 		Network: "tcp4",
 	}
 }

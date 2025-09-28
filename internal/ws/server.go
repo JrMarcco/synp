@@ -1,4 +1,4 @@
-package internal
+package ws
 
 import (
 	"context"
@@ -11,6 +11,8 @@ import (
 type WebSocketServer struct {
 	name   string
 	config *WebSocketConfig
+
+	upgrader Upgrader
 
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -48,9 +50,13 @@ func (s *WebSocketServer) acceptConn() {
 
 		conn, err := s.listener.Accept()
 		if err != nil {
-			//TODO: 接收连接失败，归还获取到的令牌。
+			//TODO: 接收连接失败，归还令牌。
 
-			s.logger.Error("[synp] failed to accept connection", zap.String("step", "accept_conn"), zap.Error(err))
+			s.logger.Error(
+				"[synp] failed to accept connection",
+				zap.String("step", "accept_conn"),
+				zap.Error(err),
+			)
 			if errors.Is(err, net.ErrClosed) {
 				// net.ErrClosed 表示 listener 已关闭，
 				// 此时可以退出。
@@ -76,13 +82,29 @@ func (s *WebSocketServer) acceptConn() {
 
 // handleConn 处理 WebSocket 连接。
 func (s *WebSocketServer) handleConn(conn net.Conn) {
+	//TODO: 归还令牌。
+
+	// 关闭连接。
 	defer func() {
 		err := conn.Close()
 		if err != nil && !errors.Is(err, net.ErrClosed) {
-			s.logger.Warn("[synp] failed to close connection", zap.String("step", "handle_conn"), zap.Error(err))
+			s.logger.Warn(
+				"[synp] failed to close connection",
+				zap.String("step", "handle_conn"),
+				zap.Error(err),
+			)
 		}
 	}()
 
-	//TODO: 处理 upgrade 请求。
+	// 处理 upgrade 请求。
+	_, _, err := s.upgrader.Upgrade(conn)
+	if err != nil {
+		s.logger.Error(
+			"[synp] failed to upgrade connection",
+			zap.String("step", "handle_conn"),
+			zap.Error(err),
+		)
+		return
+	}
 
 }
