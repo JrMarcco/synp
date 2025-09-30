@@ -3,12 +3,15 @@ package ws
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net"
 	"net/url"
+	"strings"
 
-	"github.com/JrMarcco/synp/internal/pkg/auth"
-	"github.com/JrMarcco/synp/internal/pkg/compression"
-	"github.com/JrMarcco/synp/internal/pkg/session"
+	"github.com/JrMarcco/synp"
+	"github.com/JrMarcco/synp/pkg/auth"
+	"github.com/JrMarcco/synp/pkg/compression"
+	"github.com/JrMarcco/synp/pkg/session"
 	"github.com/go-redis/redis"
 	"github.com/gobwas/httphead"
 	"github.com/gobwas/ws"
@@ -18,9 +21,12 @@ import (
 
 var (
 	ErrTokenRequired = errors.New("token is required")
+	ErrInvalidUri    = errors.New("invalid uri")
+	ErrInvalidToken  = errors.New("invalid token")
 )
 
-// Upgrader 是 WebSocket 升级器，用于将 HTTP 请求升级为 WebSocket 连接。
+var _ synp.Upgrader = (*Upgrader)(nil)
+
 type Upgrader struct {
 	rdb redis.Cmdable
 
@@ -30,9 +36,11 @@ type Upgrader struct {
 	logger *zap.Logger
 }
 
-func (u *Upgrader) Upgrade(conn net.Conn) (session.Session, *compression.State, error) {
-	var err error
+func (u *Upgrader) Name() string {
+	return "synp.upgrader"
+}
 
+func (u *Upgrader) Upgrade(conn net.Conn) (session.Session, compression.State, error) {
 	var ext *wsflate.Extension
 	if u.compressionConfig.Enabled {
 		// 启用压缩时，创建压缩扩展。
@@ -42,45 +50,71 @@ func (u *Upgrader) Upgrade(conn net.Conn) (session.Session, *compression.State, 
 		u.logger.Info("[synp-upgrader] compression enabled", zap.Any("params", params))
 	}
 
-	// var ui session.UserInfo
+	var user session.User
 	var sess session.Session
+	var autoClose bool
 	upgrader := ws.Upgrader{
+		// 协商过程，这里主要是压缩相关的协商（是否启用以及压缩算法）。
 		Negotiate: func(opt httphead.Option) (httphead.Option, error) {
+			if ext != nil {
+				return ext.Negotiate(opt)
+			}
 			return httphead.Option{}, nil
 		},
 		OnRequest: func(uri []byte) error {
-			if _, err = u.extractUserInfo(uri); err != nil {
+			// 验证 token 并提取用户信息。
+			var err error
+			if user, err = u.extractUserInfo(uri); err != nil {
 				return err
 			}
 			return nil
 		},
 		OnHeader: func(key, value []byte) error {
+			// 解析 auto close 参数。
+			if strings.EqualFold(string(key), "x-auto-close") {
+				autoClose = string(value) == "true"
+
+				u.logger.Warn(
+					"[synp-upgrader] auto close parameter parsed",
+					zap.String("header_key", string(key)),
+					zap.String("header_value", string(value)),
+					zap.Bool("auto_close", autoClose),
+				)
+			}
 			return nil
 		},
 		OnBeforeUpgrade: func() (header ws.HandshakeHeader, err error) {
+			// 设置 auto close 参数。
+			user.AutoClose = autoClose
+
+			//TODO: 初始化 session。
+
 			return ws.HandshakeHeaderString(""), nil
 		},
 	}
 
-	if _, err = upgrader.Upgrade(conn); err != nil {
-		return nil, nil, err
+	state := compression.State{
+		Enabled: false,
+	}
+
+	if _, err := upgrader.Upgrade(conn); err != nil {
+		return nil, compression.State{}, err
 	}
 
 	// 检查协商压缩的结果。
-	var state *compression.State
 	if ext != nil {
 		if params, accepted := ext.Accepted(); accepted {
-			state = &compression.State{
-				Enabled: true,
-				Ext:     ext,
-				Params:  params,
-			}
+			state.Enabled = true
+			state.Ext = ext
+			state.Params = params
 
-			u.logger.Info("[synp-upgrader] successfully negotiated compression", zap.Any("negotiated_params", params))
+			u.logger.Info(
+				"[synp-upgrader] successfully negotiated compression",
+				zap.Any("negotiated_params", params),
+			)
 			return sess, state, nil
 		}
 
-		state = &compression.State{Enabled: false}
 		u.logger.Warn("[synp-upgrader] failed to negotiate compression, downgrade to no compression")
 	}
 
@@ -91,11 +125,10 @@ func (u *Upgrader) Upgrade(conn net.Conn) (session.Session, *compression.State, 
 func (u *Upgrader) extractToken(uri []byte) (string, error) {
 	parsedURL, err := url.Parse(string(uri))
 	if err != nil {
-		return "", err
+		return "", ErrInvalidUri
 	}
 
-	params := parsedURL.Query()
-	token := params.Get("token")
+	token := parsedURL.Query().Get("token")
 	if token == "" {
 		return "", ErrTokenRequired
 	}
@@ -103,18 +136,18 @@ func (u *Upgrader) extractToken(uri []byte) (string, error) {
 }
 
 // getUserInfo 从 URI 中获取用户信息。
-func (u *Upgrader) extractUserInfo(uri []byte) (session.UserInfo, error) {
+func (u *Upgrader) extractUserInfo(uri []byte) (session.User, error) {
 	token, err := u.extractToken(uri)
 	if err != nil {
 		u.logger.Error("[synp-upgrader] failed to extract token from uri", zap.Error(err))
-		return session.UserInfo{}, err
+		return session.User{}, err
 	}
 
-	var ui session.UserInfo
-	ui, err = u.validator.Validate(context.Background(), token)
+	var user session.User
+	user, err = u.validator.Validate(context.Background(), token)
 	if err != nil {
 		u.logger.Error("[synp-upgrader] failed to validate token", zap.Error(err))
-		return session.UserInfo{}, err
+		return session.User{}, fmt.Errorf("%w: %w", ErrInvalidToken, err)
 	}
-	return ui, nil
+	return user, nil
 }

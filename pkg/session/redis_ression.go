@@ -11,5 +11,5 @@ type RedisSession struct {
 	rdb redis.Cmdable
 
 	key      string
-	userInfo UserInfo
+	userInfo User
 }

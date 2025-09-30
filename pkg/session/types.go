@@ -5,8 +5,8 @@ package session
 type Session interface {
 }
 
-// UserInfo 为 Session 的用户信息。
-type UserInfo struct {
+// User 为 Session 的用户信息。
+type User struct {
 	Bid       uint64 `json:"bid"`
 	Uid       uint64 `json:"uid"`
 	AutoClose bool   `json:"auto_close"` // 空闲时是否自动关闭连接

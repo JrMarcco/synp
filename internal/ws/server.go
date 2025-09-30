@@ -6,7 +6,8 @@ import (
 	"net"
 	"time"
 
-	"github.com/JrMarcco/synp/internal/pkg/limiter"
+	"github.com/JrMarcco/synp"
+	"github.com/JrMarcco/synp/pkg/limiter"
 	"github.com/cenkalti/backoff/v5"
 	"go.uber.org/zap"
 )
@@ -15,7 +16,7 @@ type Server struct {
 	name   string
 	config *Config
 
-	upgrader Upgrader
+	upgrader synp.Upgrader
 
 	connLimiter *limiter.TokenLimiter
 	backoff     *backoff.ExponentialBackOff

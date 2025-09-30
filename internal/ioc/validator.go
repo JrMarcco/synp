@@ -2,8 +2,8 @@ package ioc
 
 import (
 	"github.com/JrMarcco/jit/xjwt"
-	"github.com/JrMarcco/synp/internal/pkg/auth"
-	"github.com/JrMarcco/synp/internal/pkg/session"
+	"github.com/JrMarcco/synp/pkg/auth"
+	"github.com/JrMarcco/synp/pkg/session"
 	"github.com/spf13/viper"
 	"go.uber.org/fx"
 )
@@ -24,7 +24,7 @@ func InitValidator() auth.Validator {
 
 	claimsCfg := xjwt.NewClaimsConfig(xjwt.WithIssuer(cfg.Issuer))
 
-	jwtManager, err := xjwt.NewEd25519ManagerBuilder[session.UserInfo](cfg.Private, cfg.Public).
+	jwtManager, err := xjwt.NewEd25519ManagerBuilder[session.User](cfg.Private, cfg.Public).
 		ClaimsConfig(claimsCfg).
 		Build()
 	if err != nil {
