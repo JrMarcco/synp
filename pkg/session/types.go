@@ -3,6 +3,7 @@ package session
 //go:generate mockgen -source=./types.go -destination=./mock/session.mock.go -package=sessionmock -typed Session
 
 type Session interface {
+	UserInfo() User
 }
 
 // User 为 Session 的用户信息。

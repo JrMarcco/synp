@@ -13,3 +13,8 @@ type RedisSession struct {
 	key      string
 	userInfo User
 }
+
+func (s *RedisSession) UserInfo() User {
+	//TODO: not implemented
+	panic("not implemented")
+}

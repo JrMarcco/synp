@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/JrMarcco/jit/bean/option"
+	"github.com/JrMarcco/jit/retry"
 	"github.com/JrMarcco/synp"
 	"github.com/JrMarcco/synp/pkg/compression"
 	"github.com/JrMarcco/synp/pkg/session"
@@ -35,7 +36,7 @@ type Conn struct {
 	writer       *xws.Writer
 	writeTimeout time.Duration
 
-	compressionState compression.State
+	compressionState *compression.State
 
 	// 重试策略
 	initRetryInterval time.Duration
@@ -45,6 +46,11 @@ type Conn struct {
 	// 通信通道
 	sendChan    chan []byte
 	receiveChan chan []byte
+
+	// 空闲连接管理
+	mu         sync.RWMutex
+	autoClose  bool
+	lastActive time.Time
 
 	ctx        context.Context
 	cancelFunc context.CancelFunc
@@ -109,8 +115,62 @@ func (c *Conn) sendLoop() {
 //
 //	只允许在发生超时时进行重试。
 func (c *Conn) trySend(payload []byte) bool {
-	//TODO: not implemented
-	panic("not implemented")
+	// 这里可以忽略 error。
+	// 创建 ws.Conn 的时候就应该确保重试策略的参数正确。
+	retryStrategy, _ := retry.NewExponentialBackoffStrategy(
+		c.initRetryInterval, c.maxRetryInterval, c.maxRetryCount,
+	)
+
+	for {
+		select {
+		case <-c.ctx.Done():
+			return false
+		default:
+		}
+
+		// 设置写超时。
+		_ = c.netConn.SetWriteDeadline(time.Now().Add(c.writeTimeout))
+
+		_, err := c.writer.Write(payload)
+		if err != nil {
+			return true
+		}
+
+		c.logger.Error(
+			"failed to send message to client",
+			zap.String("connection_id", c.id),
+			zap.Any("user", c.sess.UserInfo()),
+			zap.Int("payload_len", len(payload)),
+			zap.Any("compression_state", c.compressionState),
+			zap.Error(err),
+		)
+
+		// 检查错误，如果是超时错误则允许重试。
+		var netErr net.Error
+		if errors.As(err, &netErr) && netErr.Timeout() {
+			duration, ok := retryStrategy.Next()
+			if !ok {
+				// 重试达到上限。
+				c.logger.Error(
+					"failed to resend message to client, retry reach max",
+					zap.String("connection_id", c.id),
+					zap.Any("user", c.sess.UserInfo()),
+					zap.Any("compression_state", c.compressionState),
+				)
+				return false
+			}
+
+			select {
+			case <-c.ctx.Done():
+				return false
+			case <-time.After(duration):
+				continue
+			}
+		}
+
+		// 非超时错误，直接失败。
+		return false
+	}
 }
 
 func (c *Conn) receiveLoop() {
@@ -147,11 +207,32 @@ func NewConn(
 		sess:    sess,
 		netConn: netConn,
 
+		readTimeout:  DefaultReadTiemout,
+		writeTimeout: DefaultWriteTiemout,
+
+		initRetryInterval: DefaultInitRetryInterval,
+		maxRetryInterval:  DefaultMaxRetryInterval,
+		maxRetryCount:     DefaultMaxRetryCount,
+
+		sendChan:    make(chan []byte, DefaultSendBufferSize),
+		receiveChan: make(chan []byte, DefaultReceiveBufferSize),
+
+		lastActive: time.Now(),
+
 		ctx:        ctx,
 		cancelFunc: cancel,
 	}
 
 	option.Apply(c, opts...)
+
+	// 在 option 应用之后才能确定 compressionState。
+	// 所以只能在这里初始化 writer 和 reader。
+	var compressionEnabled bool
+	if c.compressionState != nil {
+		compressionEnabled = c.compressionState.Enabled
+	}
+	c.reader = xws.NewServerSideReader(netConn)
+	c.writer = xws.NewServerSideWriter(netConn, compressionEnabled)
 
 	// 启动收发数据的 goroutine。
 	go c.sendLoop()
