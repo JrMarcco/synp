@@ -1,9 +1,11 @@
 package xws
 
 import (
+	"compress/flate"
 	"io"
 	"net"
 
+	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsflate"
 	"github.com/gobwas/ws/wsutil"
 )
@@ -43,12 +45,42 @@ func (r *Reader) Read() ([]byte, error) {
 	}
 }
 
-func NewServerSideReader(conn net.Conn, compressed bool) *Reader {
-	// not implemented
-	panic("not implemented")
+func NewServerSideReader(conn net.Conn) *Reader {
+	messageState := &wsflate.MessageState{}
+	handlerFunc := wsutil.ControlFrameHandler(conn, ws.StateServerSide)
+
+	return &Reader{
+		conn: conn,
+		reader: &wsutil.Reader{
+			Source:         conn,
+			State:          ws.StateServerSide | ws.StateExtended,
+			Extensions:     []wsutil.RecvExtension{messageState},
+			OnIntermediate: handlerFunc,
+		},
+		messageState: messageState,
+		flateReader: wsflate.NewReader(nil, func(r io.Reader) wsflate.Decompressor {
+			return flate.NewReader(r)
+		}),
+		handlerFunc: handlerFunc,
+	}
 }
 
-func NewClientSideReader(conn net.Conn, compressed bool) *Reader {
-	// not implemented
-	panic("not implemented")
+func NewClientSideReader(conn net.Conn) *Reader {
+	messageState := &wsflate.MessageState{}
+	handlerFunc := wsutil.ControlFrameHandler(conn, ws.StateClientSide)
+
+	return &Reader{
+		conn: conn,
+		reader: &wsutil.Reader{
+			Source:         conn,
+			State:          ws.StateClientSide | ws.StateExtended,
+			Extensions:     []wsutil.RecvExtension{messageState},
+			OnIntermediate: handlerFunc,
+		},
+		messageState: messageState,
+		flateReader: wsflate.NewReader(nil, func(r io.Reader) wsflate.Decompressor {
+			return flate.NewReader(r)
+		}),
+		handlerFunc: handlerFunc,
+	}
 }

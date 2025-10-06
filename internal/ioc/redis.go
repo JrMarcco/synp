@@ -15,8 +15,8 @@ var RedisFxOpt = fx.Module("redis", fx.Provide(InitRedis))
 type redisFxParams struct {
 	fx.In
 
+	Logger    *zap.Logger
 	Lifecycle fx.Lifecycle
-	Logger    *zap.Logger `optional:"true"`
 }
 
 func InitRedis(params redisFxParams) redis.Cmdable {

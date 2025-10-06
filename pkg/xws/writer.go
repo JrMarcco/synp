@@ -52,7 +52,7 @@ func (w *Writer) writeUncompressed(payload []byte) (int, error) {
 }
 
 func NewServerSideWriter(dst io.Writer, compressed bool) *Writer {
-	messageState := wsflate.MessageState{}
+	messageState := &wsflate.MessageState{}
 	messageState.SetCompressed(compressed)
 
 	state := ws.StateServerSide | ws.StateExtended
@@ -60,7 +60,7 @@ func NewServerSideWriter(dst io.Writer, compressed bool) *Writer {
 
 	rtn := &Writer{
 		writer:       wsutil.NewWriter(dst, state, opCode),
-		messageState: &messageState,
+		messageState: messageState,
 	}
 
 	if compressed {
@@ -70,10 +70,7 @@ func NewServerSideWriter(dst io.Writer, compressed bool) *Writer {
 		})
 	}
 
-	// 注意传入的是 messageState 的指针，
-	// 否则在后续的 SetExtensions 中，
-	// messageState 的值不会被更新。
-	rtn.writer.SetExtensions(&messageState)
+	rtn.writer.SetExtensions(messageState)
 
 	return rtn
 }
