@@ -19,6 +19,10 @@ func main() {
 
 		// 初始化 zap.Logger
 		ioc.LoggerFxOpt,
+
+		// 初始化 etcd.Client
+		ioc.EtcdFxOpt,
+
 		// 初始化 redis.Cmdable
 		ioc.RedisFxOpt,
 

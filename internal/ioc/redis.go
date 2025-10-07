@@ -39,7 +39,7 @@ func InitRedis(params redisFxParams) redis.Cmdable {
 		OnStart: func(ctx context.Context) error {
 			// 测试 redis 连接。
 			if err := rdb.WithContext(ctx).Ping().Err(); err != nil {
-				params.Logger.Error("failed to ping redis", zap.Error(err))
+				params.Logger.Error("[synp-ioc] failed to ping redis", zap.Error(err))
 				return fmt.Errorf("failed to ping redis: %w", err)
 			}
 			return nil
@@ -47,11 +47,11 @@ func InitRedis(params redisFxParams) redis.Cmdable {
 		OnStop: func(ctx context.Context) error {
 			// 关闭 redis 连接。
 			if err := rdb.Close(); err != nil {
-				params.Logger.Error("failed to close redis", zap.Error(err))
+				params.Logger.Error("[synp-ioc] failed to close redis", zap.Error(err))
 				return fmt.Errorf("failed to close redis: %w", err)
 			}
 
-			params.Logger.Info("redis closed")
+			params.Logger.Info("[synp-ioc] redis closed")
 			return nil
 		},
 	})

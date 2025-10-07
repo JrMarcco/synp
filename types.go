@@ -6,6 +6,7 @@ import (
 
 	"github.com/JrMarcco/synp/pkg/compression"
 	"github.com/JrMarcco/synp/pkg/session"
+	"go.uber.org/multierr"
 )
 
 //go:generate mockgen -source=./types.go -destination=./mock/synp.mock.go -package=synpmock -typed
@@ -37,4 +38,48 @@ type ConnManager interface {
 }
 
 // ConnEventHandler 是连接事件的回调接口。
-type ConnEventHandler interface{}
+type ConnEventHandler interface {
+	OnConnect(conn Conn) error
+	OnDisconnect(conn Conn) error
+
+	OnReceiveFromFrontend(conn Conn, payload []byte) error
+	OnPushToBackend(conn Conn, payload []byte) error
+}
+
+type ConnEventHandlerWrapper struct {
+	handlers []ConnEventHandler
+}
+
+var _ ConnEventHandler = (*ConnEventHandlerWrapper)(nil)
+
+func (w *ConnEventHandlerWrapper) OnConnect(conn Conn) error {
+	var err error
+	for _, handler := range w.handlers {
+		err = multierr.Append(err, handler.OnConnect(conn))
+	}
+	return err
+}
+
+func (w *ConnEventHandlerWrapper) OnDisconnect(conn Conn) error {
+	var err error
+	for _, handler := range w.handlers {
+		err = multierr.Append(err, handler.OnDisconnect(conn))
+	}
+	return err
+}
+
+func (w *ConnEventHandlerWrapper) OnReceiveFromFrontend(conn Conn, payload []byte) error {
+	//TODO: not implemented
+	panic("not implemented")
+}
+
+func (w *ConnEventHandlerWrapper) OnPushToBackend(conn Conn, payload []byte) error {
+	//TODO: not implemented
+	panic("not implemented")
+}
+
+func NewConnEventHandlerWrapper(handlers ...ConnEventHandler) *ConnEventHandlerWrapper {
+	return &ConnEventHandlerWrapper{
+		handlers: handlers,
+	}
+}

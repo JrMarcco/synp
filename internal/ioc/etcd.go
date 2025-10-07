@@ -14,6 +14,8 @@ import (
 	"go.uber.org/zap"
 )
 
+var EtcdFxOpt = fx.Module("etcd", fx.Provide(InitEtcd))
+
 type etcdParams struct {
 	fx.In
 
@@ -71,12 +73,12 @@ func InitEtcd(params etcdParams) *clientv3.Client {
 			cert, err := tls.LoadX509KeyPair(cfg.TLS.CertFile, cfg.TLS.KeyFile)
 			if err != nil {
 				params.Logger.Error(
-					"failed to load x509 key pair for etcd",
+					"[synp-ioc] failed to load x509 key pair for etcd",
 					zap.String("cert_file", cfg.TLS.CertFile),
 					zap.String("key_file", cfg.TLS.KeyFile),
 					zap.Error(err),
 				)
-				panic(fmt.Errorf("failed to load x509 key pair for etcd: %w", err))
+				panic(fmt.Errorf("[synp-ioc] failed to load x509 key pair for etcd: %w", err))
 			}
 
 			tlsCfg.Certificates = []tls.Certificate{cert}
@@ -86,7 +88,7 @@ func InitEtcd(params etcdParams) *clientv3.Client {
 				parsedCert, err := x509.ParseCertificate(cert.Certificate[0])
 				if err == nil {
 					params.Logger.Info(
-						"successfully loaded x509 key pair for etcd",
+						"[synp-ioc] successfully loaded x509 key pair for etcd",
 						zap.String("public_key_algorithm", parsedCert.PublicKeyAlgorithm.String()),
 						zap.String("signature_algorithm", parsedCert.SignatureAlgorithm.String()),
 					)
@@ -99,33 +101,33 @@ func InitEtcd(params etcdParams) *clientv3.Client {
 			caCert, err := os.ReadFile(cfg.TLS.CAFile)
 			if err != nil {
 				params.Logger.Error(
-					"failed to load CA file for etcd",
+					"[synp-ioc] failed to load CA file for etcd",
 					zap.String("ca_file", cfg.TLS.CAFile),
 					zap.Error(err),
 				)
-				panic(fmt.Errorf("failed to load CA file for etcd: %w", err))
+				panic(fmt.Errorf("[synp-ioc] failed to load CA file for etcd: %w", err))
 			}
 
 			caCertPool := x509.NewCertPool()
 			if !caCertPool.AppendCertsFromPEM(caCert) {
 				params.Logger.Error(
-					"failed to append CA certificate to pool for etcd",
+					"[synp-ioc] failed to append CA certificate to pool for etcd",
 					zap.Error(err),
 				)
-				panic(fmt.Errorf("failed to append CA certificate to pool for etcd: %w", err))
+				panic(fmt.Errorf("[synp-ioc] failed to append CA certificate to pool for etcd: %w", err))
 			}
 
 			tlsCfg.RootCAs = caCertPool
-			params.Logger.Info("successfully loaded CA file for etcd")
+			params.Logger.Info("[synp-ioc] successfully loaded CA file for etcd")
 		}
 
 		clientCfg.TLS = tlsCfg
-		params.Logger.Info("successfully configured TLS for etcd")
+		params.Logger.Info("[synp-ioc] successfully configured TLS for etcd")
 	}
 
 	client, err := clientv3.New(clientCfg)
 	if err != nil {
-		params.Logger.Error("failed to create etcd client", zap.Error(err))
+		params.Logger.Error("[synp-ioc] failed to create etcd client", zap.Error(err))
 		panic(fmt.Errorf("failed to create etcd client: %w", err))
 	}
 
@@ -135,24 +137,24 @@ func InitEtcd(params etcdParams) *clientv3.Client {
 
 	_, err = client.Status(ctx, cfg.Endpoints[0])
 	if err != nil {
-		params.Logger.Error("failed to connect to etcd", zap.Error(err))
+		params.Logger.Error("[synp-ioc] failed to connect to etcd", zap.Error(err))
 
 		// 连接失败直接关闭 client。
 		_ = client.Close()
-		panic(fmt.Errorf("failed to connect to etcd: %w", err))
+		panic(fmt.Errorf("[synp-ioc] failed to connect to etcd: %w", err))
 	}
 
-	params.Logger.Info("successfully connected to etcd")
+	params.Logger.Info("[synp-ioc] successfully connected to etcd")
 
 	params.Lifecycle.Append(fx.Hook{
 		OnStop: func(ctx context.Context) error {
 			err := client.Close()
 			if err != nil {
-				params.Logger.Error("failed to close etcd client", zap.Error(err))
+				params.Logger.Error("[synp-ioc] failed to close etcd client", zap.Error(err))
 				return err
 			}
 
-			params.Logger.Info("etcd client closed")
+			params.Logger.Info("[synp-ioc] etcd client closed")
 			return nil
 		},
 	})
