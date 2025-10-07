@@ -1,6 +1,7 @@
 package synp
 
 import (
+	"context"
 	"net"
 
 	"github.com/JrMarcco/synp/pkg/compression"
@@ -28,7 +29,12 @@ type Conn interface {
 	Close() error
 }
 
-type ConnManager interface{}
+type ConnManager interface {
+	NewConn(ctx context.Context, netConn net.Conn, sess session.Session, compressionState *compression.State) (Conn, error)
+	RemoveConn(ctx context.Context, id string) bool
+
+	FindByUser(ctx context.Context, user session.User) (Conn, bool)
+}
 
 // ConnEventHandler 是连接事件的回调接口。
 type ConnEventHandler interface{}

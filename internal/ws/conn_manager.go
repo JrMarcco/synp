@@ -1,11 +1,16 @@
 package ws
 
 import (
+	"context"
+	"net"
 	"sync/atomic"
 	"time"
 
 	"github.com/JrMarcco/jit/xsync"
 	"github.com/JrMarcco/synp"
+	"github.com/JrMarcco/synp/pkg/codec"
+	"github.com/JrMarcco/synp/pkg/compression"
+	"github.com/JrMarcco/synp/pkg/session"
 	"go.uber.org/zap"
 )
 
@@ -23,8 +28,8 @@ const (
 	DefaultMaxRetryInterval  = 5 * time.Second
 	DefaultMaxRetryCount     = 3
 
-	DefaultCloseTimeout  = time.Second
-	DefaultUserRateLimit = 10
+	DefaultCloseTimeout = time.Second
+	DefaultRateLimit    = 10
 )
 
 type ConnManagerConfig struct {
@@ -38,8 +43,8 @@ type ConnManagerConfig struct {
 	SendBufferSize    int
 	ReceiveBufferSize int
 
-	CloseTimeout  time.Duration
-	UserRateLimit int64
+	CloseTimeout time.Duration
+	RateLimit    int64
 }
 
 var _ synp.ConnManager = (*ConnManager)(nil)
@@ -50,5 +55,51 @@ type ConnManager struct {
 	conns *xsync.Map[string, synp.Conn]
 	len   atomic.Int64
 
+	codec codec.Codec
+
 	logger *zap.Logger
+}
+
+func (m *ConnManager) NewConn(ctx context.Context, netConn net.Conn, sess session.Session, compressionState *compression.State) (synp.Conn, error) {
+	//TODO: not implemented
+	panic("not implemented")
+}
+
+func (m *ConnManager) RemoveConn(_ context.Context, id string) bool {
+	_, ok := m.conns.LoadAndDelete(id)
+	if ok {
+		m.logger.Info(
+			"[synp-conn-manager] successfully remove connection",
+			zap.String("connection_id", id),
+		)
+		m.len.Add(-1)
+	}
+	return ok
+}
+
+func (m *ConnManager) FindByUser(_ context.Context, user session.User) (synp.Conn, bool) {
+	return m.conns.Load(user.UniqueId())
+}
+
+func NewConnManager(codec codec.Codec, cfg *ConnManagerConfig, logger *zap.Logger) *ConnManager {
+	if cfg == nil {
+		cfg = &ConnManagerConfig{
+			ReadTimeout:       DefaultReadTiemout,
+			WriteTimeout:      DefaultWriteTiemout,
+			InitRetryInterval: DefaultInitRetryInterval,
+			MaxRetryInterval:  DefaultMaxRetryInterval,
+			MaxRetryCount:     DefaultMaxRetryCount,
+			SendBufferSize:    DefaultSendBufferSize,
+			ReceiveBufferSize: DefaultReceiveBufferSize,
+			CloseTimeout:      DefaultCloseTimeout,
+			RateLimit:         DefaultRateLimit,
+		}
+	}
+
+	return &ConnManager{
+		conns:  &xsync.Map[string, synp.Conn]{},
+		codec:  codec,
+		cfg:    cfg,
+		logger: logger,
+	}
 }
