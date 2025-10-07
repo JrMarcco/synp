@@ -13,6 +13,9 @@ import (
 	"github.com/JrMarcco/synp/pkg/compression"
 	"github.com/JrMarcco/synp/pkg/session"
 	"github.com/JrMarcco/synp/pkg/xws"
+	"github.com/gobwas/ws"
+	"github.com/gobwas/ws/wsutil"
+	"go.uber.org/ratelimit"
 	"go.uber.org/zap"
 )
 
@@ -51,6 +54,14 @@ type Conn struct {
 	mu         sync.RWMutex
 	autoClose  bool
 	lastActive time.Time
+
+	// 限流:
+	//
+	// 	这里使用 uber 的 ratelimit 库，是一个基于漏桶算法（Leaky Bucket）的限流器。
+	// 	WebSocket 消息处理需要平滑，避免突发消息阻塞 receiveChan。
+	// 	同时达到限流时优先考虑阻塞等待。
+	limitRate int
+	limiter   ratelimit.Limiter
 
 	ctx        context.Context
 	cancelFunc context.CancelFunc
@@ -128,7 +139,7 @@ func (c *Conn) trySend(payload []byte) bool {
 		default:
 		}
 
-		// 设置写超时。
+		// 设置写超时（传入 0 值会禁用超时控制）。
 		_ = c.netConn.SetWriteDeadline(time.Now().Add(c.writeTimeout))
 
 		_, err := c.writer.Write(payload)
@@ -173,6 +184,17 @@ func (c *Conn) trySend(payload []byte) bool {
 	}
 }
 
+// ConnWithRateLimit 限流器 option。
+// rate 为每秒请求上限。
+func ConnWithRateLimit(rate int) option.Opt[Conn] {
+	return func(c *Conn) {
+		if rate > 0 {
+			c.limitRate = rate
+			c.limiter = ratelimit.New(rate)
+		}
+	}
+}
+
 func (c *Conn) receiveLoop() {
 	defer func() {
 		close(c.receiveChan)
@@ -180,16 +202,55 @@ func (c *Conn) receiveLoop() {
 	}()
 
 	for {
+		if c.limiter != nil {
+			// 获取限流器令牌。
+			c.limiter.Take()
+		}
+
 		select {
 		case <-c.ctx.Done():
 			return
 		default:
 		}
 
-		// 控制读数据的超时时间。
-		// 注意：
-		//  这里传入 0 值会禁用超时控制。
+		// 控制读数据的超时时间（传入 0 值会禁用超时控制）。
 		_ = c.netConn.SetReadDeadline(time.Now().Add(c.readTimeout))
+
+		payload, err := c.reader.Read()
+		if err != nil {
+			var netErr net.Error
+			if errors.As(err, &netErr) && netErr.Timeout() {
+				continue
+			}
+
+			var wsErr wsutil.ClosedError
+			if errors.As(err, &wsErr) && wsErr.Code == ws.StatusNoStatusRcvd || wsErr.Code == ws.StatusGoingAway {
+				// 客户端关闭连接，记录日志直接返回。
+				c.logger.Info(
+					"client closed connection",
+					zap.String("connection_id", c.id),
+					zap.Any("user", c.sess.UserInfo()),
+					zap.Any("compression_state", c.compressionState),
+				)
+				return
+			}
+
+			// 其他错误，直接返回。
+			c.logger.Error(
+				"failed to read message from client",
+				zap.String("connection_id", c.id),
+				zap.Any("user", c.sess.UserInfo()),
+				zap.Any("compression_state", c.compressionState),
+				zap.Error(err),
+			)
+			return
+		}
+
+		select {
+		case <-c.ctx.Done():
+			return
+		case c.receiveChan <- payload:
+		}
 	}
 }
 

@@ -13,11 +13,13 @@ require (
 	github.com/stretchr/testify v1.11.1
 	go.etcd.io/etcd/client/v3 v3.6.5
 	go.uber.org/fx v1.24.0
+	go.uber.org/ratelimit v0.3.1
 	go.uber.org/zap v1.27.0
 	google.golang.org/protobuf v1.36.10
 )
 
 require (
+	github.com/benbjohnson/clock v1.3.0 // indirect
 	github.com/coreos/go-semver v0.3.1 // indirect
 	github.com/coreos/go-systemd/v22 v22.6.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
