@@ -43,11 +43,11 @@ require (
 	go.etcd.io/etcd/client/pkg/v3 v3.6.5 // indirect
 	go.uber.org/dig v1.19.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
-	golang.org/x/net v0.44.0 // indirect
-	golang.org/x/sys v0.36.0 // indirect
-	golang.org/x/text v0.29.0 // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20251006185510-65f7160b3a87 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20251006185510-65f7160b3a87 // indirect
+	golang.org/x/net v0.46.0 // indirect
+	golang.org/x/sys v0.37.0 // indirect
+	golang.org/x/text v0.30.0 // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20251007200510-49b9836ed3ff // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20251007200510-49b9836ed3ff // indirect
 	google.golang.org/grpc v1.76.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

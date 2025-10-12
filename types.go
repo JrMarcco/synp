@@ -2,12 +2,15 @@ package synp
 
 import (
 	"context"
+	"errors"
 	"net"
 
 	"github.com/JrMarcco/synp/pkg/compression"
 	"github.com/JrMarcco/synp/pkg/session"
 	"go.uber.org/multierr"
 )
+
+var ErrRateLimited = errors.New("Request too frequently, please try again later.")
 
 //go:generate mockgen -source=./types.go -destination=./mock/synp.mock.go -package=synpmock -typed
 
@@ -26,6 +29,8 @@ type Conn interface {
 
 	Send(payload []byte) error
 	Receive() <-chan []byte
+
+	Closed() <-chan struct{}
 
 	Close() error
 }
@@ -69,13 +74,24 @@ func (w *ConnEventHandlerWrapper) OnDisconnect(conn Conn) error {
 }
 
 func (w *ConnEventHandlerWrapper) OnReceiveFromFrontend(conn Conn, payload []byte) error {
-	//TODO: not implemented
-	panic("not implemented")
+	var err error
+	for _, handler := range w.handlers {
+		handleErr := handler.OnReceiveFromFrontend(conn, payload)
+		if errors.Is(handleErr, ErrRateLimited) {
+			// 限流直接中断。
+			return nil
+		}
+		err = multierr.Append(err, handleErr)
+	}
+	return err
 }
 
 func (w *ConnEventHandlerWrapper) OnPushToBackend(conn Conn, payload []byte) error {
-	//TODO: not implemented
-	panic("not implemented")
+	var err error
+	for _, handler := range w.handlers {
+		err = multierr.Append(err, handler.OnPushToBackend(conn, payload))
+	}
+	return err
 }
 
 func NewConnEventHandlerWrapper(handlers ...ConnEventHandler) *ConnEventHandlerWrapper {

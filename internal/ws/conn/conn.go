@@ -80,13 +80,23 @@ func (c *Conn) Session() session.Session {
 }
 
 func (c *Conn) Send(payload []byte) error {
-	//TODO: not implemented
-	panic("not implemented")
+	select {
+	case <-c.ctx.Done():
+		return ErrConnClosed
+	case c.sendChan <- payload:
+		if c.ctx.Err() != nil {
+			return ErrConnClosed
+		}
+		return nil
+	}
 }
 
 func (c *Conn) Receive() <-chan []byte {
-	//TODO: not implemented
-	panic("not implemented")
+	return c.receiveChan
+}
+
+func (c *Conn) Closed() <-chan struct{} {
+	return c.ctx.Done()
 }
 
 func (c *Conn) Close() error {
@@ -184,17 +194,6 @@ func (c *Conn) trySend(payload []byte) bool {
 	}
 }
 
-// ConnWithRateLimit 限流器 option。
-// rate 为每秒请求上限。
-func ConnWithRateLimit(rate int) option.Opt[Conn] {
-	return func(c *Conn) {
-		if rate > 0 {
-			c.limitRate = rate
-			c.limiter = ratelimit.New(rate)
-		}
-	}
-}
-
 func (c *Conn) receiveLoop() {
 	defer func() {
 		close(c.receiveChan)
@@ -250,6 +249,51 @@ func (c *Conn) receiveLoop() {
 		case <-c.ctx.Done():
 			return
 		case c.receiveChan <- payload:
+		}
+	}
+}
+
+func ConnWithTimeout(readTimeout, writeTimeout time.Duration) option.Opt[Conn] {
+	return func(c *Conn) {
+		c.readTimeout = readTimeout
+		c.writeTimeout = writeTimeout
+	}
+}
+
+func ConnWithCompression(state *compression.State) option.Opt[Conn] {
+	return func(c *Conn) {
+		c.compressionState = state
+	}
+}
+
+func ConnWithRetry(initRetryInterval, maxRetryInterval time.Duration, maxRetryCount int32) option.Opt[Conn] {
+	return func(c *Conn) {
+		c.initRetryInterval = initRetryInterval
+		c.maxRetryInterval = maxRetryInterval
+		c.maxRetryCount = maxRetryCount
+	}
+}
+
+func ConnWithBuffer(sendBufferSize, receiveBufferSize int) option.Opt[Conn] {
+	return func(c *Conn) {
+		c.sendChan = make(chan []byte, sendBufferSize)
+		c.receiveChan = make(chan []byte, receiveBufferSize)
+	}
+}
+
+func ConnWithAutoClose(autoClose bool) option.Opt[Conn] {
+	return func(c *Conn) {
+		c.autoClose = autoClose
+	}
+}
+
+// ConnWithRateLimit 限流器 option。
+// rate 为每秒请求上限。
+func ConnWithRateLimit(rate int) option.Opt[Conn] {
+	return func(c *Conn) {
+		if rate > 0 {
+			c.limitRate = rate
+			c.limiter = ratelimit.New(rate)
 		}
 	}
 }
