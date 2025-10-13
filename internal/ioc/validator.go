@@ -2,8 +2,8 @@ package ioc
 
 import (
 	"github.com/JrMarcco/jit/xjwt"
-	"github.com/JrMarcco/synp/pkg/auth"
-	"github.com/JrMarcco/synp/pkg/session"
+	"github.com/JrMarcco/synp/internal/pkg/auth"
+	"github.com/JrMarcco/synp/internal/pkg/session"
 	"github.com/spf13/viper"
 	"go.uber.org/fx"
 )

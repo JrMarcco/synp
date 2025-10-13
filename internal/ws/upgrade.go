@@ -9,9 +9,9 @@ import (
 	"strings"
 
 	"github.com/JrMarcco/synp"
-	"github.com/JrMarcco/synp/pkg/auth"
-	"github.com/JrMarcco/synp/pkg/compression"
-	"github.com/JrMarcco/synp/pkg/session"
+	"github.com/JrMarcco/synp/internal/pkg/auth"
+	"github.com/JrMarcco/synp/internal/pkg/compression"
+	"github.com/JrMarcco/synp/internal/pkg/session"
 	"github.com/go-redis/redis"
 	"github.com/gobwas/httphead"
 	"github.com/gobwas/ws"
@@ -40,7 +40,7 @@ func (u *Upgrader) Name() string {
 	return "synp.upgrader"
 }
 
-func (u *Upgrader) Upgrade(conn net.Conn) (session.Session, compression.State, error) {
+func (u *Upgrader) Upgrade(conn net.Conn) (session.Session, *compression.State, error) {
 	var ext *wsflate.Extension
 	if u.compressionConfig.Enabled {
 		// 启用压缩时，创建压缩扩展。
@@ -98,7 +98,7 @@ func (u *Upgrader) Upgrade(conn net.Conn) (session.Session, compression.State, e
 	}
 
 	if _, err := upgrader.Upgrade(conn); err != nil {
-		return nil, compression.State{}, err
+		return nil, nil, err
 	}
 
 	// 检查协商压缩的结果。
@@ -112,13 +112,13 @@ func (u *Upgrader) Upgrade(conn net.Conn) (session.Session, compression.State, e
 				"[synp-upgrader] successfully negotiated compression",
 				zap.Any("negotiated_params", params),
 			)
-			return sess, state, nil
+			return sess, &state, nil
 		}
 
 		u.logger.Warn("[synp-upgrader] failed to negotiate compression, downgrade to no compression")
 	}
 
-	return sess, state, nil
+	return sess, &state, nil
 }
 
 // extractToken 从 URI 中提取 token。

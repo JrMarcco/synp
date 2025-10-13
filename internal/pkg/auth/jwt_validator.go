@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/JrMarcco/jit/xjwt"
-	"github.com/JrMarcco/synp/pkg/session"
+	"github.com/JrMarcco/synp/internal/pkg/session"
 )
 
 var _ Validator = (*JwtValidator)(nil)

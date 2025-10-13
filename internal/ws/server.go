@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/JrMarcco/synp"
-	"github.com/JrMarcco/synp/pkg/limiter"
+	"github.com/JrMarcco/synp/internal/pkg/limiter"
 	"github.com/cenkalti/backoff/v5"
 	"go.uber.org/zap"
 )
@@ -129,6 +129,8 @@ func (s *Server) handleConn(conn net.Conn) {
 		)
 		return
 	}
+
+	//TODO: 处理收发消息。
 
 }
 

@@ -3,8 +3,7 @@ package codec_test
 import (
 	"testing"
 
-	"github.com/JrMarcco/synp/pkg/codec"
-
+	"github.com/JrMarcco/synp/internal/pkg/codec"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )

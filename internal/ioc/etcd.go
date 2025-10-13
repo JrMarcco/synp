@@ -96,7 +96,7 @@ func InitEtcd(params etcdParams) *clientv3.Client {
 			}
 		}
 
-		// 加载 CA 文件。
+		// 加载 CA 证书（用于验证服务器的证书是否可信）。
 		if cfg.TLS.CAFile != "" {
 			caCert, err := os.ReadFile(cfg.TLS.CAFile)
 			if err != nil {

@@ -6,11 +6,12 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/JrMarcco/jit/bean/option"
 	"github.com/JrMarcco/jit/xsync"
 	"github.com/JrMarcco/synp"
-	"github.com/JrMarcco/synp/pkg/codec"
-	"github.com/JrMarcco/synp/pkg/compression"
-	"github.com/JrMarcco/synp/pkg/session"
+	"github.com/JrMarcco/synp/internal/pkg/codec"
+	"github.com/JrMarcco/synp/internal/pkg/compression"
+	"github.com/JrMarcco/synp/internal/pkg/session"
 	"go.uber.org/zap"
 )
 
@@ -44,7 +45,7 @@ type ConnManagerConfig struct {
 	ReceiveBufferSize int
 
 	CloseTimeout time.Duration
-	RateLimit    int64
+	RateLimit    int
 }
 
 var _ synp.ConnManager = (*ConnManager)(nil)
@@ -61,8 +62,56 @@ type ConnManager struct {
 }
 
 func (m *ConnManager) NewConn(ctx context.Context, netConn net.Conn, sess session.Session, compressionState *compression.State) (synp.Conn, error) {
-	//TODO: not implemented
-	panic("not implemented")
+	user := sess.UserInfo()
+
+	cid := user.UniqueId()
+	opts := m.convertToConnOpts(sess.UserInfo(), compressionState)
+
+	c := NewConn(ctx, cid, sess, netConn, opts...)
+
+	m.conns.Store(cid, c)
+	m.logger.Info(
+		"[synp-conn-manager] successfully create connection",
+		zap.String("connection_id", cid),
+		zap.Any("user", user),
+	)
+
+	m.len.Add(1)
+	return c, nil
+}
+
+func (m *ConnManager) convertToConnOpts(user session.User, compressionState *compression.State) []option.Opt[Conn] {
+	var opts []option.Opt[Conn]
+
+	if compressionState != nil {
+		opts = append(opts, ConnWithCompression(compressionState))
+	}
+
+	if m.cfg.ReadTimeout > 0 {
+		opts = append(opts, ConnWithReadTimeout(m.cfg.ReadTimeout))
+	}
+	if m.cfg.WriteTimeout > 0 {
+		opts = append(opts, ConnWithWriteTimeout(m.cfg.WriteTimeout))
+	}
+
+	if m.cfg.SendBufferSize > 0 {
+		opts = append(opts, ConnWithWriteBuffer(m.cfg.SendBufferSize))
+	}
+	if m.cfg.ReceiveBufferSize > 0 {
+		opts = append(opts, ConnWithReadBuffer(m.cfg.ReceiveBufferSize))
+	}
+
+	if m.cfg.InitRetryInterval > 0 && m.cfg.MaxRetryInterval > 0 && m.cfg.MaxRetryCount > 0 {
+		opts = append(opts, ConnWithRetry(m.cfg.InitRetryInterval, m.cfg.MaxRetryInterval, m.cfg.MaxRetryCount))
+	}
+
+	opts = append(
+		opts,
+		ConnWithAutoClose(user.AutoClose),
+		ConnWithRateLimit(m.cfg.RateLimit),
+	)
+
+	return opts
 }
 
 func (m *ConnManager) RemoveConn(_ context.Context, id string) bool {

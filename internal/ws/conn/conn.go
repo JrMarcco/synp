@@ -10,9 +10,9 @@ import (
 	"github.com/JrMarcco/jit/bean/option"
 	"github.com/JrMarcco/jit/retry"
 	"github.com/JrMarcco/synp"
-	"github.com/JrMarcco/synp/pkg/compression"
-	"github.com/JrMarcco/synp/pkg/session"
-	"github.com/JrMarcco/synp/pkg/xws"
+	"github.com/JrMarcco/synp/internal/pkg/compression"
+	"github.com/JrMarcco/synp/internal/pkg/session"
+	"github.com/JrMarcco/synp/internal/pkg/xws"
 	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsutil"
 	"go.uber.org/ratelimit"
@@ -51,9 +51,9 @@ type Conn struct {
 	receiveChan chan []byte
 
 	// 空闲连接管理
-	mu         sync.RWMutex
-	autoClose  bool
-	lastActive time.Time
+	mu           sync.RWMutex
+	autoClose    bool
+	activityTime time.Time
 
 	// 限流:
 	//
@@ -93,6 +93,15 @@ func (c *Conn) Send(payload []byte) error {
 
 func (c *Conn) Receive() <-chan []byte {
 	return c.receiveChan
+}
+
+func (c *Conn) UpdateActivityTime() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if c.ctx.Err() == nil {
+		c.activityTime = time.Now()
+	}
 }
 
 func (c *Conn) Closed() <-chan struct{} {
@@ -149,11 +158,11 @@ func (c *Conn) trySend(payload []byte) bool {
 		default:
 		}
 
-		// 设置写超时（传入 0 值会禁用超时控制）。
+		// 设置写超时。
 		_ = c.netConn.SetWriteDeadline(time.Now().Add(c.writeTimeout))
 
 		_, err := c.writer.Write(payload)
-		if err != nil {
+		if err == nil {
 			return true
 		}
 
@@ -212,7 +221,7 @@ func (c *Conn) receiveLoop() {
 		default:
 		}
 
-		// 控制读数据的超时时间（传入 0 值会禁用超时控制）。
+		// 设置读超时。
 		_ = c.netConn.SetReadDeadline(time.Now().Add(c.readTimeout))
 
 		payload, err := c.reader.Read()
@@ -223,7 +232,7 @@ func (c *Conn) receiveLoop() {
 			}
 
 			var wsErr wsutil.ClosedError
-			if errors.As(err, &wsErr) && wsErr.Code == ws.StatusNoStatusRcvd || wsErr.Code == ws.StatusGoingAway {
+			if errors.As(err, &wsErr) && (wsErr.Code == ws.StatusNoStatusRcvd || wsErr.Code == ws.StatusGoingAway) {
 				// 客户端关闭连接，记录日志直接返回。
 				c.logger.Info(
 					"[synp-conn] client closed connection",
@@ -253,9 +262,14 @@ func (c *Conn) receiveLoop() {
 	}
 }
 
-func ConnWithTimeout(readTimeout, writeTimeout time.Duration) option.Opt[Conn] {
+func ConnWithReadTimeout(readTimeout time.Duration) option.Opt[Conn] {
 	return func(c *Conn) {
 		c.readTimeout = readTimeout
+	}
+}
+
+func ConnWithWriteTimeout(writeTimeout time.Duration) option.Opt[Conn] {
+	return func(c *Conn) {
 		c.writeTimeout = writeTimeout
 	}
 }
@@ -274,10 +288,15 @@ func ConnWithRetry(initRetryInterval, maxRetryInterval time.Duration, maxRetryCo
 	}
 }
 
-func ConnWithBuffer(sendBufferSize, receiveBufferSize int) option.Opt[Conn] {
+func ConnWithReadBuffer(receiveBufferSize int) option.Opt[Conn] {
+	return func(c *Conn) {
+		c.receiveChan = make(chan []byte, receiveBufferSize)
+	}
+}
+
+func ConnWithWriteBuffer(sendBufferSize int) option.Opt[Conn] {
 	return func(c *Conn) {
 		c.sendChan = make(chan []byte, sendBufferSize)
-		c.receiveChan = make(chan []byte, receiveBufferSize)
 	}
 }
 
@@ -322,7 +341,7 @@ func NewConn(
 		sendChan:    make(chan []byte, DefaultSendBufferSize),
 		receiveChan: make(chan []byte, DefaultReceiveBufferSize),
 
-		lastActive: time.Now(),
+		activityTime: time.Now(),
 
 		ctx:        ctx,
 		cancelFunc: cancel,

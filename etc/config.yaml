@@ -1,2 +1,55 @@
 profile:
   env: "dev"
+
+# Kafka 配置
+# 使用 SASL/SCRAM-SHA-256 + TLS 认证
+kafka:
+  # Kafka Broker
+  brokers:
+    - "kafka-1.example.com:9093"
+    - "kafka-2.example.com:9093"
+    - "kafka-3.example.com:9093"
+
+  # Producer 配置
+  # 消息确认机制：
+  #    0  = NoResponse (不等待确认，最快但可能丢失消息)
+  #    1  = WaitForLocal (等待 leader 确认)
+  #   -1  = WaitForAll (等待所有副本确认，最安全，推荐)
+  required_acks: -1
+
+  # 压缩算法：none, gzip, snappy, lz4, zstd
+  # 推荐 snappy
+  compression: "snappy"
+
+  # 最大消息大小（字节），默认 1MB
+  max_message_bytes: 1024000
+
+  # 最大重试次数
+  retry_max: 3
+
+  # 重试间隔（毫秒）
+  retry_backoff: 100
+
+  # 超时时间（毫秒）
+  timeout: 30000
+
+  # 是否启用幂等性（推荐启用，可以防止消息重复发送）
+  # 启用后会自动设置 required_acks=-1 和 max_open_requests=1
+  idempotent_enabled: true
+
+  # 最大并发请求数（当 idempotent_enabled=false 时生效）
+  max_open_requests: 8
+
+  # TLS 配置
+  tls:
+    # CA 证书文件路径（必需）
+    ca_file: "/etc/kafka/certs/ca.crt"
+    # 是否跳过证书验证（生产环境必须设置为 false）
+    insecure_skip_verify: false
+
+  # SASL/SCRAM-SHA-256 认证配置
+  sasl:
+    username: "your-kafka-username"
+    password: "your-kafka-password"
+    # 提示：建议使用环境变量存储密码
+    # password: "${KAFKA_PASSWORD}"
