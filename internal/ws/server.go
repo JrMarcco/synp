@@ -8,23 +8,25 @@ import (
 
 	"github.com/JrMarcco/synp"
 	"github.com/JrMarcco/synp/internal/pkg/limiter"
+	wsc "github.com/JrMarcco/synp/internal/ws/conn"
 	"github.com/cenkalti/backoff/v5"
 	"go.uber.org/zap"
 )
 
 type Server struct {
-	name   string
 	config *Config
 
-	upgrader synp.Upgrader
+	listener net.Listener
+
+	upgrader       synp.Upgrader
+	connManager    synp.ConnManager
+	connEvtHandler synp.ConnEventHandler
 
 	connLimiter *limiter.TokenLimiter
 	backoff     *backoff.ExponentialBackOff
 
 	ctx        context.Context
 	cancelFunc context.CancelFunc
-
-	listener net.Listener
 
 	logger *zap.Logger
 }
@@ -120,7 +122,7 @@ func (s *Server) handleConn(conn net.Conn) {
 	}()
 
 	// 处理 upgrade 请求。
-	_, _, err := s.upgrader.Upgrade(conn)
+	sess, compressionState, err := s.upgrader.Upgrade(conn)
 	if err != nil {
 		s.logger.Error(
 			"[synp-server] failed to upgrade connection from HTTP to WebSocket",
@@ -130,8 +132,83 @@ func (s *Server) handleConn(conn net.Conn) {
 		return
 	}
 
-	//TODO: 处理收发消息。
+	// 创建、管理连接。
+	// 注意，这里的连接指的是 synp.Conn 接口，并不是 net.Conn 接口。
+	synpConn, err := s.connManager.NewConn(s.ctx, conn, sess, compressionState)
+	if err != nil {
+		s.logger.Error(
+			"[synp-server] failed to create synp connection",
+			zap.String("step", "handle_conn"),
+			zap.Error(err),
+		)
+		return
+	}
+	defer func() {
+		s.connManager.RemoveConn(synpConn.Id())
+		if err := synpConn.Close(); err != nil {
+			s.logger.Error(
+				"[synp-server] failed to close synp connection",
+				zap.String("step", "handle_conn"),
+				zap.String("connection_id", synpConn.Id()),
+				zap.Error(err),
+			)
+		}
+	}()
 
+	// 处理 on connect & on disconnect 事件。
+	if err := s.connEvtHandler.OnConnect(synpConn); err != nil {
+		s.logger.Error(
+			"[synp-server] failed to handle on connect event",
+			zap.String("step", "handle_conn"),
+			zap.Error(err),
+		)
+		return
+	}
+	defer func() {
+		if err := s.connEvtHandler.OnDisconnect(synpConn); err != nil {
+			s.logger.Error(
+				"[synp-server] failed to handle on disconnect event",
+				zap.String("step", "handle_conn"),
+				zap.Error(err),
+			)
+		}
+	}()
+
+	//处理收发消息。
+	for {
+		select {
+		case message, ok := <-synpConn.Receive():
+			if !ok {
+				return
+			}
+
+			if err := s.connEvtHandler.OnReceiveFromFrontend(synpConn, message); err != nil {
+				// 处理前端（业务客户端）发送的消息失败。
+				s.logger.Error(
+					"[synp-server] failed to handle on receive from frontend event",
+					zap.String("step", "handle_conn"),
+					zap.Error(err),
+				)
+
+				// 如果连接已关闭，则直接返回 ( wsc => internal/ws/conn )。
+				if errors.Is(err, wsc.ErrConnClosed) {
+					return
+				}
+			}
+		case <-synpConn.Closed():
+			s.logger.Info(
+				"[synp-server] synp connection has been closed",
+				zap.String("step", "handle_conn"),
+			)
+			return
+		case <-s.ctx.Done():
+			s.logger.Info(
+				"[synp-server] server has been closed",
+				zap.String("step", "handle_conn"),
+			)
+			return
+		}
+	}
 }
 
 func (s *Server) Shutdown() error {

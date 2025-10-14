@@ -41,13 +41,19 @@ type EvtHandler struct {
 }
 
 func (h *EvtHandler) OnConnect(conn synp.Conn) error {
-	//TODO: not implemented
-	panic("not implemented")
+	h.logger.Debug(
+		"[synp-conn-event-handler] connection connected",
+		zap.String("connection_id", conn.Id()),
+	)
+	return nil
 }
 
 func (h *EvtHandler) OnDisconnect(conn synp.Conn) error {
-	//TODO: not implemented
-	panic("not implemented")
+	h.logger.Debug(
+		"[synp-conn-event-handler] connection disconnected",
+		zap.String("connection_id", conn.Id()),
+	)
+	return conn.Close()
 }
 
 func (h *EvtHandler) OnReceiveFromFrontend(conn synp.Conn, payload []byte) error {

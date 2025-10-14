@@ -114,7 +114,7 @@ func (m *ConnManager) convertToConnOpts(user session.User, compressionState *com
 	return opts
 }
 
-func (m *ConnManager) RemoveConn(_ context.Context, id string) bool {
+func (m *ConnManager) RemoveConn(id string) bool {
 	_, ok := m.conns.LoadAndDelete(id)
 	if ok {
 		m.logger.Info(
@@ -126,7 +126,7 @@ func (m *ConnManager) RemoveConn(_ context.Context, id string) bool {
 	return ok
 }
 
-func (m *ConnManager) FindByUser(_ context.Context, user session.User) (synp.Conn, bool) {
+func (m *ConnManager) FindByUser(user session.User) (synp.Conn, bool) {
 	return m.conns.Load(user.UniqueId())
 }
 
