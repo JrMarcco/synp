@@ -145,7 +145,7 @@ func InitKafka(params kafkaFxParams) sarama.SyncProducer {
 	// 配置 tls。
 	if cfg.TLS.CAFile != "" {
 		tlsCfg := &tls.Config{
-			MinVersion:         tls.VersionTLS12,
+			MinVersion:         tls.VersionTLS13,
 			InsecureSkipVerify: cfg.TLS.InsecureSkipVerify,
 		}
 

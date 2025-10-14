@@ -1,0 +1,262 @@
+name: synp
+services:
+  kafka-1:
+    image: docker.io/bitnami/kafka:latest
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+    environment:
+      # KRaft 设置
+      - KAFKA_ENABLE_KRAFT=yes
+      - KAFKA_CFG_PROCESS_ROLES=controller,broker
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@kafka-1:9091,2@kafka-2:9091,3@kafka-3:9091
+      - KAFKA_CFG_NODE_ID=1
+      - KAFKA_KRAFT_CLUSTER_ID=${KAFKA_CLUSTER_ID}
+
+      # Broker 配置
+      - KAFKA_CFG_BROKER_ID=1
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=INTERNAL
+
+      # Listeners 配置
+      - KAFKA_CFG_LISTENERS=INTERNAL://:9094,CLIENT://:9092,CONTROLLER://:9091,EXTERNAL://:9093
+      - KAFKA_CFG_ADVERTISED_LISTENERS=INTERNAL://kafka-1:9094,CLIENT://kafka-1:9092,EXTERNAL://localhost:9093
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:SSL,INTERNAL:SASL_SSL,CLIENT:SASL_SSL,EXTERNAL:SASL_SSL
+
+      # SASL/SCRAM-SHA-256 认证配置
+      - KAFKA_CFG_SASL_ENABLED_MECHANISMS=SCRAM-SHA-256
+      - KAFKA_CFG_SASL_MECHANISM_INTER_BROKER_PROTOCOL=SCRAM-SHA-256
+
+      # 设置 super users
+      - KAFKA_CFG_SUPER_USERS=${KAFKA_SUPER_USERS}
+
+      # TLS 配置
+      - KAFKA_TLS_TYPE=PEM
+      - KAFKA_TLS_CLIENT_AUTH=none
+      - KAFKA_CERTIFICATE_PASSWORD=
+      - KAFKA_TLS_KEYSTORE_FILE=/bitnami/kafka/config/certs/kafka.keystore.pem
+      - KAFKA_TLS_TRUSTSTORE_FILE=/bitnami/kafka/config/certs/kafka.truststore.pem
+
+      # 初始化用户
+      - KAFKA_CLIENT_USERS=${KAFKA_CLIENT_USERS}
+      - KAFKA_CLIENT_PASSWORDS=${KAFKA_CLIENT_PASSWORDS}
+      - KAFKA_INTER_BROKER_USER=${KAFKA_ADMIN_USER}
+      - KAFKA_INTER_BROKER_PASSWORD=${KAFKA_ADMIN_PASSWORD}
+
+      # 日志配置
+      - KAFKA_CFG_LOG_DIRS=/bitnami/kafka/data
+      - KAFKA_CFG_LOG_RETENTION_HOURS=168
+      - KAFKA_CFG_LOG_SEGMENT_BYTES=1073741824
+      - KAFKA_CFG_LOG_RETENTION_CHECK_INTERVAL_MS=300000
+
+      # 性能调优
+      - KAFKA_CFG_NUM_NETWORK_THREADS=3
+      - KAFKA_CFG_NUM_IO_THREADS=8
+      - KAFKA_CFG_SOCKET_SEND_BUFFER_BYTES=102400
+      - KAFKA_CFG_SOCKET_RECEIVE_BUFFER_BYTES=102400
+      - KAFKA_CFG_SOCKET_REQUEST_MAX_BYTES=104857600
+
+      # 其他配置
+      - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=true
+      - KAFKA_CFG_DEFAULT_REPLICATION_FACTOR=3
+      - KAFKA_CFG_MIN_INSYNC_REPLICAS=2
+
+    volumes:
+      - ./data-1:/bitnami/kafka
+      - ./certs:/bitnami/kafka/config/certs:ro
+    networks:
+      - synp-network
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f 'kafka.Kafka' > /dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  kafka-2:
+    image: docker.io/bitnami/kafka:latest
+    ports:
+      - "9192:9092"
+      - "9193:9093"
+    environment:
+      # KRaft 设置
+      - KAFKA_ENABLE_KRAFT=yes
+      - KAFKA_CFG_PROCESS_ROLES=controller,broker
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@kafka-1:9091,2@kafka-2:9091,3@kafka-3:9091
+      - KAFKA_CFG_NODE_ID=2
+      - KAFKA_KRAFT_CLUSTER_ID=${KAFKA_CLUSTER_ID}
+
+      # Broker 配置
+      - KAFKA_CFG_BROKER_ID=2
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=INTERNAL
+
+      # Listeners 配置
+      - KAFKA_CFG_LISTENERS=INTERNAL://:9094,CLIENT://:9092,CONTROLLER://:9091,EXTERNAL://:9093
+      - KAFKA_CFG_ADVERTISED_LISTENERS=INTERNAL://kafka-2:9094,CLIENT://kafka-2:9092,EXTERNAL://localhost:9193
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:SSL,INTERNAL:SASL_SSL,CLIENT:SASL_SSL,EXTERNAL:SASL_SSL
+
+      # SASL/SCRAM-SHA-256 认证配置
+      - KAFKA_CFG_SASL_ENABLED_MECHANISMS=SCRAM-SHA-256
+      - KAFKA_CFG_SASL_MECHANISM_INTER_BROKER_PROTOCOL=SCRAM-SHA-256
+
+      # 设置 super users
+      - KAFKA_CFG_SUPER_USERS=${KAFKA_SUPER_USERS}
+
+      # TLS 配置
+      - KAFKA_TLS_TYPE=PEM
+      - KAFKA_TLS_CLIENT_AUTH=none
+      - KAFKA_CERTIFICATE_PASSWORD=
+      - KAFKA_TLS_KEYSTORE_FILE=/bitnami/kafka/config/certs/kafka.keystore.pem
+      - KAFKA_TLS_TRUSTSTORE_FILE=/bitnami/kafka/config/certs/kafka.truststore.pem
+
+      # 初始化用户
+      - KAFKA_CLIENT_USERS=${KAFKA_CLIENT_USERS}
+      - KAFKA_CLIENT_PASSWORDS=${KAFKA_CLIENT_PASSWORDS}
+      - KAFKA_INTER_BROKER_USER=${KAFKA_ADMIN_USER}
+      - KAFKA_INTER_BROKER_PASSWORD=${KAFKA_ADMIN_PASSWORD}
+
+      # 日志配置
+      - KAFKA_CFG_LOG_DIRS=/bitnami/kafka/data
+      - KAFKA_CFG_LOG_RETENTION_HOURS=168
+      - KAFKA_CFG_LOG_SEGMENT_BYTES=1073741824
+      - KAFKA_CFG_LOG_RETENTION_CHECK_INTERVAL_MS=300000
+
+      # 性能调优
+      - KAFKA_CFG_NUM_NETWORK_THREADS=3
+      - KAFKA_CFG_NUM_IO_THREADS=8
+      - KAFKA_CFG_SOCKET_SEND_BUFFER_BYTES=102400
+      - KAFKA_CFG_SOCKET_RECEIVE_BUFFER_BYTES=102400
+      - KAFKA_CFG_SOCKET_REQUEST_MAX_BYTES=104857600
+
+      # 其他配置
+      - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=true
+      - KAFKA_CFG_DEFAULT_REPLICATION_FACTOR=3
+      - KAFKA_CFG_MIN_INSYNC_REPLICAS=2
+
+    volumes:
+      - ./data-2:/bitnami/kafka
+      - ./certs:/bitnami/kafka/config/certs:ro
+    networks:
+      - synp-network
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f 'kafka.Kafka' > /dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  kafka-3:
+    image: docker.io/bitnami/kafka:latest
+    ports:
+      - "9292:9092"
+      - "9293:9093"
+    environment:
+      # KRaft 设置
+      - KAFKA_ENABLE_KRAFT=yes
+      - KAFKA_CFG_PROCESS_ROLES=controller,broker
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@kafka-1:9091,2@kafka-2:9091,3@kafka-3:9091
+      - KAFKA_CFG_NODE_ID=3
+      - KAFKA_KRAFT_CLUSTER_ID=${KAFKA_CLUSTER_ID}
+
+      # Broker 配置
+      - KAFKA_CFG_BROKER_ID=3
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=INTERNAL
+
+      # Listeners 配置
+      - KAFKA_CFG_LISTENERS=INTERNAL://:9094,CLIENT://:9092,CONTROLLER://:9091,EXTERNAL://:9093
+      - KAFKA_CFG_ADVERTISED_LISTENERS=INTERNAL://kafka-3:9094,CLIENT://kafka-3:9092,EXTERNAL://localhost:9293
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:SSL,INTERNAL:SASL_SSL,CLIENT:SASL_SSL,EXTERNAL:SASL_SSL
+
+      # SASL/SCRAM-SHA-256 认证配置
+      - KAFKA_CFG_SASL_ENABLED_MECHANISMS=SCRAM-SHA-256
+      - KAFKA_CFG_SASL_MECHANISM_INTER_BROKER_PROTOCOL=SCRAM-SHA-256
+
+      # 设置 super users
+      - KAFKA_CFG_SUPER_USERS=${KAFKA_SUPER_USERS}
+
+      # TLS 配置
+      - KAFKA_TLS_TYPE=PEM
+      - KAFKA_TLS_CLIENT_AUTH=none
+      - KAFKA_CERTIFICATE_PASSWORD=
+      - KAFKA_TLS_KEYSTORE_FILE=/bitnami/kafka/config/certs/kafka.keystore.pem
+      - KAFKA_TLS_TRUSTSTORE_FILE=/bitnami/kafka/config/certs/kafka.truststore.pem
+
+      # 初始化用户
+      - KAFKA_CLIENT_USERS=${KAFKA_CLIENT_USERS}
+      - KAFKA_CLIENT_PASSWORDS=${KAFKA_CLIENT_PASSWORDS}
+      - KAFKA_INTER_BROKER_USER=${KAFKA_ADMIN_USER}
+      - KAFKA_INTER_BROKER_PASSWORD=${KAFKA_ADMIN_PASSWORD}
+
+      # 日志配置
+      - KAFKA_CFG_LOG_DIRS=/bitnami/kafka/data
+      - KAFKA_CFG_LOG_RETENTION_HOURS=168
+      - KAFKA_CFG_LOG_SEGMENT_BYTES=1073741824
+      - KAFKA_CFG_LOG_RETENTION_CHECK_INTERVAL_MS=300000
+
+      # 性能调优
+      - KAFKA_CFG_NUM_NETWORK_THREADS=3
+      - KAFKA_CFG_NUM_IO_THREADS=8
+      - KAFKA_CFG_SOCKET_SEND_BUFFER_BYTES=102400
+      - KAFKA_CFG_SOCKET_RECEIVE_BUFFER_BYTES=102400
+      - KAFKA_CFG_SOCKET_REQUEST_MAX_BYTES=104857600
+
+      # 其他配置
+      - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=true
+      - KAFKA_CFG_DEFAULT_REPLICATION_FACTOR=3
+      - KAFKA_CFG_MIN_INSYNC_REPLICAS=2
+
+    volumes:
+      - ./data-3:/bitnami/kafka
+      - ./certs:/bitnami/kafka/config/certs:ro
+    networks:
+      - synp-network
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f 'kafka.Kafka' > /dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ui 管理界面 ( 可选 )
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    ports:
+      - "18080:8080"
+    environment:
+      - DYNAMIC_CONFIG_ENABLED=true
+      - KAFKA_CLUSTERS_0_NAME=${KAFKA_CLUSTER_ID}
+      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka-1:9092,kafka-2:9092,kafka-3:9092
+
+      # SASL/SCRAM-SHA-256 认证配置
+      - KAFKA_CLUSTERS_0_PROPERTIES_SASL_MECHANISM=SCRAM-SHA-256
+      - KAFKA_CLUSTERS_0_PROPERTIES_SECURITY_PROTOCOL=SASL_SSL
+      - KAFKA_CLUSTERS_0_PROPERTIES_SASL_JAAS_CONFIG=org.apache.kafka.common.security.scram.ScramLoginModule required username="${KAFKA_CLIENT_USER}" password="${KAFKA_CLIENT_PASSWORD}";
+
+      # TLS 配置
+      - KAFKA_CLUSTERS_0_PROPERTIES_SSL_TRUSTSTORE_LOCATION=/certs/kafka.truststore.pem
+      - KAFKA_CLUSTERS_0_PROPERTIES_SSL_TRUSTSTORE_TYPE=PEM
+
+      # UI 配置
+      - AUTH_TYPE=DISABLED
+      - MANAGEMENT_HEALTH_LDAP_ENABLED=false
+
+    volumes:
+      - ./certs:/certs:ro
+    networks:
+      - synp-network
+    depends_on:
+      - kafka-1
+      - kafka-2
+      - kafka-3
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:18080/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+networks:
+  synp-network:
+    driver: bridge
