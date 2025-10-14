@@ -59,36 +59,43 @@ type kafkaFxParams struct {
 	Lifecycle fx.Lifecycle
 }
 
-func InitKafka(params kafkaFxParams) sarama.SyncProducer {
-	type tlsConfig struct {
-		CAFile             string `mapstructure:"ca_file"`
-		InsecureSkipVerify bool   `mapstructure:"insecure_skip_verify"`
-	}
+type kafkaFxResult struct {
+	fx.Out
 
-	type saslConfig struct {
-		Username string `mapstructure:"username"`
-		Password string `mapstructure:"password"`
-	}
+	Client   sarama.Client
+	Producer sarama.SyncProducer
+}
 
-	type config struct {
-		Brokers []string `mapstructure:"brokers"`
+type kafkaTlsConfig struct {
+	CAFile             string `mapstructure:"ca_file"`
+	InsecureSkipVerify bool   `mapstructure:"insecure_skip_verify"`
+}
 
-		// Producer 配置
-		RequiredAcks      int16         `mapstructure:"required_acks"`      // 0=NoResponse, 1=WaitForLocal, -1=WaitForAll
-		Compression       string        `mapstructure:"compression"`        // none, gzip, snappy, lz4, zstd
-		MaxMessageBytes   int           `mapstructure:"max_message_bytes"`  // 最大消息大小，默认 1MB
-		RetryMax          int           `mapstructure:"retry_max"`          // 最大重试次数
-		RetryBackoff      time.Duration `mapstructure:"retry_backoff"`      // 重试间隔（毫秒）
-		Timeout           time.Duration `mapstructure:"timeout"`            // 超时时间（毫秒）
-		IdempotentEnabled bool          `mapstructure:"idempotent_enabled"` // 是否启用幂等性
-		MaxOpenRequests   int           `mapstructure:"max_open_requests"`  // 最大并发请求数
+type kafkaSaslConfig struct {
+	Username string `mapstructure:"username"`
+	Password string `mapstructure:"password"`
+}
 
-		TLS  tlsConfig  `mapstructure:"tls"`
-		SASL saslConfig `mapstructure:"sasl"`
-	}
+type kafkaConfig struct {
+	Brokers []string `mapstructure:"brokers"`
 
-	cfg := config{
-		// 设置默认值
+	RequiredAcks      int16         `mapstructure:"required_acks"`      // 0=NoResponse, 1=WaitForLocal, -1=WaitForAll
+	Compression       string        `mapstructure:"compression"`        // none, gzip, snappy, lz4, zstd
+	MaxMessageBytes   int           `mapstructure:"max_message_bytes"`  // 最大消息大小，默认 1MB
+	RetryMax          int           `mapstructure:"retry_max"`          // 最大重试次数
+	RetryBackoff      time.Duration `mapstructure:"retry_backoff"`      // 重试间隔（毫秒）
+	Timeout           time.Duration `mapstructure:"timeout"`            // 超时时间（毫秒）
+	IdempotentEnabled bool          `mapstructure:"idempotent_enabled"` // 是否启用幂等性
+	MaxOpenRequests   int           `mapstructure:"max_open_requests"`  // 最大并发请求数
+
+	TLS  kafkaTlsConfig  `mapstructure:"tls"`
+	SASL kafkaSaslConfig `mapstructure:"sasl"`
+}
+
+// loadKafkaConfig 加载 Kafka 配置。
+func loadKafkaConfig(logger *zap.Logger) *kafkaConfig {
+	// 设置默认值。
+	cfg := &kafkaConfig{
 		RequiredAcks:      -1,                     // WaitForAll
 		Compression:       "snappy",               // 使用 snappy 压缩
 		MaxMessageBytes:   1024000,                // 1MB
@@ -99,16 +106,88 @@ func InitKafka(params kafkaFxParams) sarama.SyncProducer {
 		MaxOpenRequests:   8,                      // 最大并发请求数，当 idempotent_enabled=false 时生效
 	}
 
-	if err := viper.UnmarshalKey("kafka", &cfg); err != nil {
-		params.Logger.Error("[synp-ioc] failed to unmarshal kafka config", zap.Error(err))
+	if err := viper.UnmarshalKey("kafka", cfg); err != nil {
+		logger.Error("[synp-ioc] failed to unmarshal kafka config", zap.Error(err))
 		panic(fmt.Errorf("failed to unmarshal kafka config: %w", err))
 	}
 
-	// 创建 Kafka 配置
-	kafkaCfg := sarama.NewConfig()
-	kafkaCfg.Version = sarama.V4_1_0_0 // 设置 Kafka 版本
+	return cfg
+}
 
-	// Producer 配置
+// configureTLS 配置 TLS。
+func configureTLS(kafkaCfg *sarama.Config, tlsCfg kafkaTlsConfig, logger *zap.Logger, component string) {
+	if tlsCfg.CAFile == "" {
+		return
+	}
+
+	tlsConf := &tls.Config{
+		MinVersion:         tls.VersionTLS13,
+		InsecureSkipVerify: tlsCfg.InsecureSkipVerify,
+	}
+
+	// 加载 CA 证书（用于验证服务器的证书是否可信）。
+	caCert, err := os.ReadFile(tlsCfg.CAFile)
+	if err != nil {
+		logger.Error(
+			"[synp-ioc] failed to load CA file for kafka",
+			zap.String("component", component),
+			zap.String("ca_file", tlsCfg.CAFile),
+			zap.Error(err),
+		)
+		panic(fmt.Errorf("failed to load CA file for kafka: %w", err))
+	}
+
+	caCertPool := x509.NewCertPool()
+	if !caCertPool.AppendCertsFromPEM(caCert) {
+		logger.Error(
+			"[synp-ioc] failed to append CA certificate to pool for kafka",
+			zap.String("component", component),
+		)
+		panic(fmt.Errorf("failed to append CA certificate to pool for kafka"))
+	}
+
+	tlsConf.RootCAs = caCertPool
+
+	kafkaCfg.Net.TLS.Enable = true
+	kafkaCfg.Net.TLS.Config = tlsConf
+
+	logger.Info(
+		"[synp-ioc] successfully configured TLS for kafka",
+		zap.String("component", component),
+		zap.String("ca_file", tlsCfg.CAFile),
+	)
+}
+
+// configureSASL 配置 SASL/SCRAM-SHA-256 认证。
+func configureSASL(kafkaCfg *sarama.Config, saslCfg kafkaSaslConfig, logger *zap.Logger, component string) {
+	if saslCfg.Username == "" || saslCfg.Password == "" {
+		return
+	}
+
+	kafkaCfg.Net.SASL.Enable = true
+	kafkaCfg.Net.SASL.Mechanism = sarama.SASLTypeSCRAMSHA256
+	kafkaCfg.Net.SASL.User = saslCfg.Username
+	kafkaCfg.Net.SASL.Password = saslCfg.Password
+	kafkaCfg.Net.SASL.SCRAMClientGeneratorFunc = func() sarama.SCRAMClient {
+		return &scramClient{HashGeneratorFcn: SHA256}
+	}
+
+	logger.Info(
+		"[synp-ioc] successfully configured SASL/SCRAM-SHA-256 for kafka",
+		zap.String("component", component),
+		zap.String("username", saslCfg.Username),
+	)
+}
+
+// newBaseSaramaConfig 创建基础的 sarama 配置。
+func newBaseSaramaConfig() *sarama.Config {
+	kafkaCfg := sarama.NewConfig()
+	kafkaCfg.Version = sarama.V4_1_0_0
+	return kafkaCfg
+}
+
+// configureProducer 配置 Producer 相关设置。
+func configureProducer(kafkaCfg *sarama.Config, cfg *kafkaConfig) {
 	kafkaCfg.Producer.RequiredAcks = sarama.RequiredAcks(cfg.RequiredAcks)
 	kafkaCfg.Producer.Return.Successes = true
 	kafkaCfg.Producer.Return.Errors = true
@@ -128,7 +207,7 @@ func InitKafka(params kafkaFxParams) sarama.SyncProducer {
 		kafkaCfg.Net.MaxOpenRequests = cfg.MaxOpenRequests
 	}
 
-	// 配置压缩
+	// 配置压缩。
 	switch cfg.Compression {
 	case "gzip":
 		kafkaCfg.Producer.Compression = sarama.CompressionGZIP
@@ -141,60 +220,46 @@ func InitKafka(params kafkaFxParams) sarama.SyncProducer {
 	default:
 		kafkaCfg.Producer.Compression = sarama.CompressionNone
 	}
+}
 
-	// 配置 tls。
-	if cfg.TLS.CAFile != "" {
-		tlsCfg := &tls.Config{
-			MinVersion:         tls.VersionTLS13,
-			InsecureSkipVerify: cfg.TLS.InsecureSkipVerify,
-		}
+// configureConsumer 配置 Consumer 相关设置。
+func configureConsumer(kafkaCfg *sarama.Config) {
+	kafkaCfg.Consumer.Return.Errors = true
+}
 
-		// 加载 CA 证书（用于验证服务器的证书是否可信）。
-		caCert, err := os.ReadFile(cfg.TLS.CAFile)
-		if err != nil {
-			params.Logger.Error(
-				"[synp-ioc] failed to load CA file for kafka",
-				zap.String("ca_file", cfg.TLS.CAFile),
-				zap.Error(err),
-			)
-			panic(fmt.Errorf("failed to load CA file for kafka: %w", err))
-		}
+func InitKafka(params kafkaFxParams) kafkaFxResult {
+	cfg := loadKafkaConfig(params.Logger)
 
-		caCertPool := x509.NewCertPool()
-		if !caCertPool.AppendCertsFromPEM(caCert) {
-			params.Logger.Error("[synp-ioc] failed to append CA certificate to pool for kafka")
-			panic(fmt.Errorf("failed to append CA certificate to pool for kafka"))
-		}
+	// 创建 Client 配置。
+	clientCfg := newBaseSaramaConfig()
+	configureConsumer(clientCfg)
+	configureTLS(clientCfg, cfg.TLS, params.Logger, "client")
+	configureSASL(clientCfg, cfg.SASL, params.Logger, "client")
 
-		tlsCfg.RootCAs = caCertPool
-
-		kafkaCfg.Net.TLS.Enable = true
-		kafkaCfg.Net.TLS.Config = tlsCfg
-
-		params.Logger.Info(
-			"[synp-ioc] successfully configured TLS for kafka",
-			zap.String("ca_file", cfg.TLS.CAFile),
+	// 创建 Kafka Client。
+	client, err := sarama.NewClient(cfg.Brokers, clientCfg)
+	if err != nil {
+		params.Logger.Error(
+			"[synp-ioc] failed to create kafka client",
+			zap.Strings("brokers", cfg.Brokers),
+			zap.Error(err),
 		)
+		panic(fmt.Errorf("failed to create kafka client: %w", err))
 	}
 
-	// 配置 SASL/SCRAM-SHA-256 认证。
-	if cfg.SASL.Username != "" && cfg.SASL.Password != "" {
-		kafkaCfg.Net.SASL.Enable = true
-		kafkaCfg.Net.SASL.Mechanism = sarama.SASLTypeSCRAMSHA256
-		kafkaCfg.Net.SASL.User = cfg.SASL.Username
-		kafkaCfg.Net.SASL.Password = cfg.SASL.Password
-		kafkaCfg.Net.SASL.SCRAMClientGeneratorFunc = func() sarama.SCRAMClient {
-			return &scramClient{HashGeneratorFcn: SHA256}
-		}
+	params.Logger.Info(
+		"[synp-ioc] successfully created kafka client",
+		zap.Strings("brokers", cfg.Brokers),
+	)
 
-		params.Logger.Info(
-			"[synp-ioc] successfully configured SASL/SCRAM-SHA-256 for kafka",
-			zap.String("username", cfg.SASL.Username),
-		)
-	}
+	// 创建 Producer 配置。
+	producerCfg := newBaseSaramaConfig()
+	configureProducer(producerCfg, cfg)
+	configureTLS(producerCfg, cfg.TLS, params.Logger, "producer")
+	configureSASL(producerCfg, cfg.SASL, params.Logger, "producer")
 
 	// 创建 SyncProducer。
-	producer, err := sarama.NewSyncProducer(cfg.Brokers, kafkaCfg)
+	producer, err := sarama.NewSyncProducer(cfg.Brokers, producerCfg)
 	if err != nil {
 		params.Logger.Error(
 			"[synp-ioc] failed to create kafka producer",
@@ -209,17 +274,35 @@ func InitKafka(params kafkaFxParams) sarama.SyncProducer {
 		zap.Strings("brokers", cfg.Brokers),
 	)
 
+	// 注册生命周期钩子。
 	params.Lifecycle.Append(fx.Hook{
 		OnStop: func(ctx context.Context) error {
+			var errProducer, errClient error
+
 			if err := producer.Close(); err != nil {
 				params.Logger.Error("[synp-ioc] failed to close kafka producer", zap.Error(err))
-				return fmt.Errorf("failed to close kafka producer: %w", err)
+				errProducer = fmt.Errorf("failed to close kafka producer: %w", err)
+			} else {
+				params.Logger.Info("[synp-ioc] kafka producer closed")
 			}
 
-			params.Logger.Info("[synp-ioc] kafka producer closed")
-			return nil
+			if err := client.Close(); err != nil {
+				params.Logger.Error("[synp-ioc] failed to close kafka client", zap.Error(err))
+				errClient = fmt.Errorf("failed to close kafka client: %w", err)
+			} else {
+				params.Logger.Info("[synp-ioc] kafka client closed")
+			}
+
+			// 返回第一个错误（如果有）。
+			if errProducer != nil {
+				return errProducer
+			}
+			return errClient
 		},
 	})
 
-	return producer
+	return kafkaFxResult{
+		Producer: producer,
+		Client:   client,
+	}
 }

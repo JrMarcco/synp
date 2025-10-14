@@ -16,14 +16,14 @@ import (
 
 var EtcdFxOpt = fx.Module("etcd", fx.Provide(InitEtcd))
 
-type etcdParams struct {
+type etcdFxParams struct {
 	fx.In
 
 	Logger    *zap.Logger
 	Lifecycle fx.Lifecycle
 }
 
-func InitEtcd(params etcdParams) *clientv3.Client {
+func InitEtcd(params etcdFxParams) *clientv3.Client {
 	type tlsConfig struct {
 		Enabled  bool   `mapstructure:"enabled"`
 		CertFile string `mapstructure:"cert_file"`

@@ -10,13 +10,13 @@ import (
 
 var LoggerFxOpt = fx.Module("logger", fx.Provide(InitLogger))
 
-type loggerParams struct {
+type loggerFxParams struct {
 	fx.In
 
 	Lifecycle fx.Lifecycle
 }
 
-func InitLogger(params loggerParams) *zap.Logger {
+func InitLogger(params loggerFxParams) *zap.Logger {
 	type config struct {
 		Env string `mapstructure:"env"`
 	}
