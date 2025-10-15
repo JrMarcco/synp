@@ -5,7 +5,7 @@ go 1.25
 require (
 	github.com/IBM/sarama v1.46.2
 	github.com/JrMarcco/jit v0.0.2
-	github.com/JrMarcco/synp-api v0.0.1
+	github.com/JrMarcco/synp-api v0.0.2
 	github.com/cenkalti/backoff/v5 v5.0.3
 	github.com/go-redis/redis v6.15.9+incompatible
 	github.com/gobwas/httphead v0.1.0

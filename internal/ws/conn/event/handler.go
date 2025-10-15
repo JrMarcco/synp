@@ -42,7 +42,7 @@ type EvtHandler struct {
 
 func (h *EvtHandler) OnConnect(conn synp.Conn) error {
 	h.logger.Debug(
-		"[synp-conn-event-handler] connection connected",
+		"[synp-conn-evt-handler] connection connected",
 		zap.String("connection_id", conn.Id()),
 	)
 	return nil
@@ -50,7 +50,7 @@ func (h *EvtHandler) OnConnect(conn synp.Conn) error {
 
 func (h *EvtHandler) OnDisconnect(conn synp.Conn) error {
 	h.logger.Debug(
-		"[synp-conn-event-handler] connection disconnected",
+		"[synp-conn-evt-handler] connection disconnected",
 		zap.String("connection_id", conn.Id()),
 	)
 	return conn.Close()
@@ -61,7 +61,7 @@ func (h *EvtHandler) OnReceiveFromFrontend(conn synp.Conn, payload []byte) error
 	msg, err := h.decodePayload(payload)
 	if err != nil {
 		h.logger.Error(
-			"[synp-conn-event-handler] failed to decode payload",
+			"[synp-conn-evt-handler] failed to decode payload",
 			zap.String("step", "on_receive_from_frontend"),
 			zap.String("connection_id", conn.Id()),
 			zap.Any("user", conn.Session().UserInfo()),
@@ -75,7 +75,7 @@ func (h *EvtHandler) OnReceiveFromFrontend(conn synp.Conn, payload []byte) error
 	ok, err := h.cacheMessage(user.Bid, msg)
 	if err != nil {
 		h.logger.Error(
-			"[synp-conn-event-handler] failed to cache message",
+			"[synp-conn-evt-handler] failed to cache message",
 			zap.String("step", "on_receive_from_frontend"),
 			zap.String("connection_id", conn.Id()),
 			zap.Any("user", conn.Session().UserInfo()),
@@ -86,17 +86,17 @@ func (h *EvtHandler) OnReceiveFromFrontend(conn synp.Conn, payload []byte) error
 
 	if !ok {
 		h.logger.Warn(
-			"[synp-conn-event-handler] message duplicated, ignore it",
+			"[synp-conn-evt-handler] message duplicated, ignore it",
 			zap.String("step", "on_receive_from_frontend"),
 			zap.String("connection_id", conn.Id()),
-			zap.String("biz_key", msg.GetBizKey()),
+			zap.String("message_id", msg.GetMessageId()),
 			zap.Any("user", conn.Session().UserInfo()),
 		)
 		return ErrMessageDuplicated
 	}
 
 	h.logger.Info(
-		"[synp-conn-event-handler] received message from frontend",
+		"[synp-conn-evt-handler] received message from frontend",
 		zap.String("step", "on_receive_from_frontend"),
 		zap.String("connection_id", conn.Id()),
 		zap.String("message", msg.String()),
@@ -107,7 +107,7 @@ func (h *EvtHandler) OnReceiveFromFrontend(conn synp.Conn, payload []byte) error
 	msgHandler, ok := h.msgHandlers[msg.GetCmd()]
 	if !ok {
 		h.logger.Error(
-			"[synp-conn-event-handler] unknown message type from frontend",
+			"[synp-conn-evt-handler] unknown message type from frontend",
 			zap.String("step", "on_receive_from_frontend"),
 			zap.String("connection_id", conn.Id()),
 			zap.Any("user", conn.Session().UserInfo()),
@@ -121,7 +121,7 @@ func (h *EvtHandler) OnReceiveFromFrontend(conn synp.Conn, payload []byte) error
 			uncacheErr := h.uncacheMessage(user.Bid, msg)
 			if uncacheErr != nil {
 				h.logger.Error(
-					"[synp-conn-event-handler] failed to uncache message",
+					"[synp-conn-evt-handler] failed to uncache message",
 					zap.String("step", "on_receive_from_frontend"),
 					zap.String("connection_id", conn.Id()),
 					zap.String("message", msg.String()),
@@ -142,7 +142,7 @@ func (h *EvtHandler) decodePayload(payload []byte) (*messagev1.Message, error) {
 	msg := &messagev1.Message{}
 	if err := h.codec.Unmarshal(payload, msg); err != nil {
 		h.logger.Error(
-			"[synp-conn-event-handler] failed to unmarshal message",
+			"[synp-conn-evt-handler] failed to unmarshal message",
 			zap.String("step", "decode_payload"),
 			zap.String("codec_name", h.codec.Name()),
 			zap.Error(err),
@@ -150,14 +150,14 @@ func (h *EvtHandler) decodePayload(payload []byte) (*messagev1.Message, error) {
 		return nil, fmt.Errorf("%w: unknown message type", ErrInvalidMessage)
 	}
 
-	if msg.GetCmd() != commonv1.CommandType_COMMAND_TYPE_HEARTBEAT && msg.GetBizKey() == "" {
-		// 非心跳消息，biz_key 不能为空。
+	if msg.GetCmd() != commonv1.CommandType_COMMAND_TYPE_HEARTBEAT && msg.GetMessageId() == "" {
+		// 非心跳消息，message_id 不能为空。
 		h.logger.Error(
-			"[synp-conn-event-handler] message biz_key is empty",
+			"[synp-conn-evt-handler] message biz_key is empty",
 			zap.String("step", "decode_payload"),
 			zap.String("message", msg.String()),
 		)
-		return nil, fmt.Errorf("%w: empty biz_key", ErrInvalidMessage)
+		return nil, fmt.Errorf("%w: empty message_id", ErrInvalidMessage)
 	}
 
 	return msg, nil
@@ -171,7 +171,7 @@ func (h *EvtHandler) cacheMessage(bizId uint64, msg *messagev1.Message) (bool, e
 	ctx, cancel := context.WithTimeout(context.Background(), h.cacheRequestTimeout)
 	defer cancel()
 
-	return h.rdb.SetNX(ctx, h.cacheKey(bizId, msg.GetBizKey()), msg.GetBizKey(), h.cacheExpiration).Result()
+	return h.rdb.SetNX(ctx, h.cacheKey(bizId, msg.GetMessageId()), msg.GetMessageId(), h.cacheExpiration).Result()
 }
 
 func (h *EvtHandler) needUncacheMessage(err error) bool {
@@ -186,15 +186,15 @@ func (h *EvtHandler) uncacheMessage(bizId uint64, msg *messagev1.Message) error 
 	ctx, cancel := context.WithTimeout(context.Background(), h.cacheRequestTimeout)
 	defer cancel()
 
-	if _, err := h.rdb.Del(ctx, h.cacheKey(bizId, msg.GetBizKey())).Result(); err != nil {
+	if _, err := h.rdb.Del(ctx, h.cacheKey(bizId, msg.GetMessageId())).Result(); err != nil {
 		return fmt.Errorf("%w: %w", ErrUncacheMessage, err)
 	}
 
 	return nil
 }
 
-func (h *EvtHandler) cacheKey(bizId uint64, bizKey string) string {
-	return fmt.Sprintf("%d:%s", bizId, bizKey)
+func (h *EvtHandler) cacheKey(bizId uint64, messageId string) string {
+	return fmt.Sprintf("%d:%s", bizId, messageId)
 }
 
 func (h *EvtHandler) OnReceiveFromBackend(conn synp.Conn, payload []byte) error {
