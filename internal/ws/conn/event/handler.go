@@ -20,7 +20,7 @@ var (
 	ErrCacheMessage       = errors.New("cache message failed")
 	ErrUncacheMessage     = errors.New("uncache message failed")
 	ErrMessageDuplicated  = errors.New("message duplicated, ignore it")
-	ErrUnknownMessageType = errors.New("unknown message type")
+	ErrUnknownMessageType = errors.New("unknown message (command) type")
 	ErrMaxRetryExceeded   = errors.New("max retry exceeded")
 )
 
@@ -134,6 +134,10 @@ func (h *EvtHandler) OnReceiveFromFrontend(conn synp.Conn, payload []byte) error
 	return err
 }
 
+// decodePayload 解析 payload。
+// 注：
+//
+//	这里解析的是整个消息字节流，消息体 ( body 字段 ) 需要另外解析。
 func (h *EvtHandler) decodePayload(payload []byte) (*messagev1.Message, error) {
 	msg := &messagev1.Message{}
 	if err := h.codec.Unmarshal(payload, msg); err != nil {

@@ -12,10 +12,11 @@ import (
 	"github.com/JrMarcco/synp/internal/pkg/auth"
 	"github.com/JrMarcco/synp/internal/pkg/compression"
 	"github.com/JrMarcco/synp/internal/pkg/session"
-	"github.com/go-redis/redis"
+	sr "github.com/JrMarcco/synp/internal/pkg/session/redis"
 	"github.com/gobwas/httphead"
 	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsflate"
+	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 )
 
@@ -87,8 +88,18 @@ func (u *Upgrader) Upgrade(conn net.Conn) (session.Session, *compression.State, 
 			// 设置 auto close 参数。
 			user.AutoClose = autoClose
 
-			//TODO: 初始化 session。
+			// 初始化 session。
+			sessionBuilder := sr.NewRedisSessionBuilder(u.rdb)
+			createdSession, newSession, err := sessionBuilder.Build(context.Background(), user)
+			if err != nil {
+				return nil, err
+			}
 
+			if !newSession {
+				u.logger.Warn("[synp-upgrader] session already exists", zap.Any("user", user))
+			}
+
+			sess = createdSession
 			return ws.HandshakeHeaderString(""), nil
 		},
 	}

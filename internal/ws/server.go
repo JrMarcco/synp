@@ -162,6 +162,9 @@ func (s *Server) handleConn(conn net.Conn) {
 			zap.String("step", "handle_conn"),
 			zap.Error(err),
 		)
+		// on connect 事件失败，直接返回。
+		// 注：
+		//  这里最好直接返回以防止后续的事件处理发生不可预料的错误。
 		return
 	}
 	defer func() {
@@ -174,14 +177,13 @@ func (s *Server) handleConn(conn net.Conn) {
 		}
 	}()
 
-	//处理收发消息。
+	// 处理收发消息。
 	for {
 		select {
 		case message, ok := <-synpConn.Receive():
 			if !ok {
 				return
 			}
-
 			if err := s.connEvtHandler.OnReceiveFromFrontend(synpConn, message); err != nil {
 				// 处理前端（业务客户端）发送的消息失败。
 				s.logger.Error(

@@ -19,9 +19,7 @@ import (
 	"go.uber.org/zap"
 )
 
-var (
-	ErrConnClosed = errors.New("connection closed")
-)
+var ErrConnClosed = errors.New("connection closed")
 
 var _ synp.Conn = (*Conn)(nil)
 
@@ -169,9 +167,9 @@ func (c *Conn) trySend(payload []byte) bool {
 		c.logger.Error(
 			"[synp-conn] failed to send message to client",
 			zap.String("connection_id", c.id),
-			zap.Any("user", c.sess.UserInfo()),
 			zap.Int("payload_len", len(payload)),
 			zap.Any("compression_state", c.compressionState),
+			zap.Any("user", c.sess.UserInfo()),
 			zap.Error(err),
 		)
 
@@ -184,8 +182,8 @@ func (c *Conn) trySend(payload []byte) bool {
 				c.logger.Error(
 					"[synp-conn] failed to resend message to client, retry reach max",
 					zap.String("connection_id", c.id),
-					zap.Any("user", c.sess.UserInfo()),
 					zap.Any("compression_state", c.compressionState),
+					zap.Any("user", c.sess.UserInfo()),
 				)
 				return false
 			}
@@ -237,8 +235,8 @@ func (c *Conn) receiveLoop() {
 				c.logger.Info(
 					"[synp-conn] client closed connection",
 					zap.String("connection_id", c.id),
-					zap.Any("user", c.sess.UserInfo()),
 					zap.Any("compression_state", c.compressionState),
+					zap.Any("user", c.sess.UserInfo()),
 				)
 				return
 			}
@@ -247,8 +245,8 @@ func (c *Conn) receiveLoop() {
 			c.logger.Error(
 				"[synp-conn] failed to read message from client",
 				zap.String("connection_id", c.id),
-				zap.Any("user", c.sess.UserInfo()),
 				zap.Any("compression_state", c.compressionState),
+				zap.Any("user", c.sess.UserInfo()),
 				zap.Error(err),
 			)
 			return

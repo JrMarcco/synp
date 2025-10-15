@@ -1,8 +1,14 @@
 package message
 
 import (
+	"errors"
+
 	"github.com/JrMarcco/synp"
 	messagev1 "github.com/JrMarcco/synp-api/api/go/message/v1"
+)
+
+var (
+	ErrMarshalMessage = errors.New("failed to marshal message")
 )
 
 //go:generate mockgen -source=./types.go -destination=./mock/message.mock.go -package=messagemock -typed Handler
