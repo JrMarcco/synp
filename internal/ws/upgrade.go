@@ -89,7 +89,7 @@ func (u *Upgrader) Upgrade(conn net.Conn) (session.Session, *compression.State, 
 			user.AutoClose = autoClose
 
 			// 初始化 session。
-			sessionBuilder := sr.NewRedisSessionBuilder(u.rdb)
+			sessionBuilder := sr.NewSessionBuilder(u.rdb)
 			createdSession, newSession, err := sessionBuilder.Build(context.Background(), user)
 			if err != nil {
 				return nil, err

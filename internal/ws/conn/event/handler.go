@@ -10,7 +10,8 @@ import (
 	commonv1 "github.com/JrMarcco/synp-api/api/go/common/v1"
 	messagev1 "github.com/JrMarcco/synp-api/api/go/message/v1"
 	"github.com/JrMarcco/synp/internal/pkg/codec"
-	"github.com/JrMarcco/synp/internal/ws/conn/message"
+	"github.com/JrMarcco/synp/internal/ws/conn/message/downstream"
+	"github.com/JrMarcco/synp/internal/ws/conn/message/upstream"
 	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 )
@@ -35,7 +36,8 @@ type EvtHandler struct {
 
 	codec codec.Codec
 
-	msgHandlers map[commonv1.CommandType]message.MsgHandler
+	uMsgHandlers map[commonv1.CommandType]upstream.UMsgHandler
+	dMsgHandler  downstream.DMsgHandler
 
 	logger *zap.Logger
 }
@@ -104,7 +106,7 @@ func (h *EvtHandler) OnReceiveFromFrontend(conn synp.Conn, payload []byte) error
 	)
 
 	// 处理消息。
-	msgHandler, ok := h.msgHandlers[msg.GetCmd()]
+	uMsgHandler, ok := h.uMsgHandlers[msg.GetCmd()]
 	if !ok {
 		h.logger.Error(
 			"[synp-conn-evt-handler] unknown message type from frontend",
@@ -115,7 +117,7 @@ func (h *EvtHandler) OnReceiveFromFrontend(conn synp.Conn, payload []byte) error
 		return ErrUnknownMessageType
 	}
 
-	if err = msgHandler.Handle(conn, msg); err != nil {
+	if err = uMsgHandler.Handle(conn, msg); err != nil {
 		// 删除消息缓存。
 		if h.needUncacheMessage(err) {
 			uncacheErr := h.uncacheMessage(user.Bid, msg)
@@ -130,7 +132,6 @@ func (h *EvtHandler) OnReceiveFromFrontend(conn synp.Conn, payload []byte) error
 			}
 		}
 	}
-
 	return err
 }
 
@@ -141,22 +142,11 @@ func (h *EvtHandler) OnReceiveFromFrontend(conn synp.Conn, payload []byte) error
 func (h *EvtHandler) decodePayload(payload []byte) (*messagev1.Message, error) {
 	msg := &messagev1.Message{}
 	if err := h.codec.Unmarshal(payload, msg); err != nil {
-		h.logger.Error(
-			"[synp-conn-evt-handler] failed to unmarshal message",
-			zap.String("step", "decode_payload"),
-			zap.String("codec_name", h.codec.Name()),
-			zap.Error(err),
-		)
 		return nil, fmt.Errorf("%w: unknown message type", ErrInvalidMessage)
 	}
 
 	if msg.GetCmd() != commonv1.CommandType_COMMAND_TYPE_HEARTBEAT && msg.GetMessageId() == "" {
 		// 非心跳消息，message_id 不能为空。
-		h.logger.Error(
-			"[synp-conn-evt-handler] message biz_key is empty",
-			zap.String("step", "decode_payload"),
-			zap.String("message", msg.String()),
-		)
 		return nil, fmt.Errorf("%w: empty message_id", ErrInvalidMessage)
 	}
 
@@ -197,7 +187,16 @@ func (h *EvtHandler) cacheKey(bizId uint64, messageId string) string {
 	return fmt.Sprintf("%d:%s", bizId, messageId)
 }
 
-func (h *EvtHandler) OnReceiveFromBackend(conn synp.Conn, payload []byte) error {
-	//TODO: not implemented
-	panic("not implemented")
+func (h *EvtHandler) OnReceiveFromBackend(conn synp.Conn, msg *messagev1.PushMessage) error {
+	if msg.GetMessageId() == "" {
+		return fmt.Errorf("%w: empty message_id", ErrInvalidMessage)
+	}
+	if msg.GetBizId() == 0 {
+		return fmt.Errorf("%w: empty biz_id", ErrInvalidMessage)
+	}
+	if msg.GetReceiverId() == 0 {
+		return fmt.Errorf("%w: empty receiver_id", ErrInvalidMessage)
+	}
+
+	return h.dMsgHandler.Handle(conn, msg)
 }

@@ -19,34 +19,34 @@ var (
 	ErrSessionCreate = errors.New("failed to create session")
 )
 
-var _ session.Session = (*RedisSession)(nil)
+var _ session.Session = (*Session)(nil)
 
-// RedisSession 为 Session 的 Redis 实现。
-type RedisSession struct {
+// Session 为 Session 的 Redis 实现。
+type Session struct {
 	rdb redis.Cmdable
 
 	key      string
 	userInfo session.User
 }
 
-func (s *RedisSession) UserInfo() session.User {
+func (s *Session) UserInfo() session.User {
 	//TODO: not implemented
 	panic("not implemented")
 }
 
-func (s *RedisSession) Set(ctx context.Context, key string, val string) error {
+func (s *Session) Set(ctx context.Context, key string, val string) error {
 	//TODO: not implemented
 	panic("not implemented")
 }
 
-func (s *RedisSession) Get(ctx context.Context, key string) (string, error) {
+func (s *Session) Get(ctx context.Context, key string) (string, error) {
 	//TODO: not implemented
 	panic("not implemented")
 }
 
 // saveToRedis 将 Session 保存到 redis 中。
 // 如果 Session 已存在，则返回 ErrSessionExists。
-func (s *RedisSession) saveToRedis(ctx context.Context) error {
+func (s *Session) saveToRedis(ctx context.Context) error {
 	args := []any{
 		"sign_in_time",
 		time.Now().Format(time.RFC3339Nano),
@@ -70,22 +70,22 @@ func (s *RedisSession) saveToRedis(ctx context.Context) error {
 	return ErrSessionExists
 }
 
-func newRedisSession(rdb redis.Cmdable, user session.User) *RedisSession {
-	return &RedisSession{
+func newSession(rdb redis.Cmdable, user session.User) *Session {
+	return &Session{
 		rdb:      rdb,
 		key:      user.SessionKey(),
 		userInfo: user,
 	}
 }
 
-var _ session.Builder = (*RedisSessionBuilder)(nil)
+var _ session.Builder = (*SessionBuilder)(nil)
 
-type RedisSessionBuilder struct {
+type SessionBuilder struct {
 	rdb redis.Cmdable
 }
 
-func (b *RedisSessionBuilder) Build(ctx context.Context, user session.User) (session.Session, bool, error) {
-	sess := newRedisSession(b.rdb, user)
+func (b *SessionBuilder) Build(ctx context.Context, user session.User) (session.Session, bool, error) {
+	sess := newSession(b.rdb, user)
 
 	var err error
 	if err = sess.saveToRedis(ctx); err == nil {
@@ -99,6 +99,6 @@ func (b *RedisSessionBuilder) Build(ctx context.Context, user session.User) (ses
 	return nil, false, err
 }
 
-func NewRedisSessionBuilder(rdb redis.Cmdable) *RedisSessionBuilder {
-	return &RedisSessionBuilder{rdb: rdb}
+func NewSessionBuilder(rdb redis.Cmdable) *SessionBuilder {
+	return &SessionBuilder{rdb: rdb}
 }

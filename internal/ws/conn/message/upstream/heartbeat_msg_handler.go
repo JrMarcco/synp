@@ -1,4 +1,4 @@
-package message
+package upstream
 
 import (
 	"fmt"
@@ -6,10 +6,11 @@ import (
 	"github.com/JrMarcco/synp"
 	messagev1 "github.com/JrMarcco/synp-api/api/go/message/v1"
 	"github.com/JrMarcco/synp/internal/pkg/codec"
+	"github.com/JrMarcco/synp/internal/ws/conn/message"
 	"go.uber.org/zap"
 )
 
-var _ MsgHandler = (*HeartbeatMsgHandler)(nil)
+var _ UMsgHandler = (*HeartbeatMsgHandler)(nil)
 
 // HeartbeatMsgHandler 是心跳消息处理器的实现，用于处理心跳消息。
 type HeartbeatMsgHandler struct {
@@ -34,7 +35,7 @@ func (h *HeartbeatMsgHandler) Handle(conn synp.Conn, msg *messagev1.Message) err
 			zap.String("message", msg.String()),
 			zap.Error(err),
 		)
-		return fmt.Errorf("%w: %w", ErrMarshalMessage, err)
+		return fmt.Errorf("%w: %w", message.ErrMarshalMessage, err)
 	}
 
 	if err = conn.Send(payload); err != nil {

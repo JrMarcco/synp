@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net"
 
+	messagev1 "github.com/JrMarcco/synp-api/api/go/message/v1"
 	"github.com/JrMarcco/synp/internal/pkg/compression"
 	"github.com/JrMarcco/synp/internal/pkg/session"
 	"go.uber.org/multierr"
@@ -55,7 +56,7 @@ type ConnEventHandler interface {
 	OnReceiveFromFrontend(conn Conn, payload []byte) error
 
 	// OnReceiveFromBackend 收到前端（业务客户端）消息的回调，通常用于发送消息到后端。
-	OnReceiveFromBackend(conn Conn, payload []byte) error
+	OnReceiveFromBackend(conn Conn, pushMsg *messagev1.PushMessage) error
 }
 
 type ConnEventHandlerWrapper struct {
@@ -93,10 +94,10 @@ func (w *ConnEventHandlerWrapper) OnReceiveFromFrontend(conn Conn, payload []byt
 	return err
 }
 
-func (w *ConnEventHandlerWrapper) OnReceiveFromBackend(conn Conn, payload []byte) error {
+func (w *ConnEventHandlerWrapper) OnReceiveFromBackend(conn Conn, pushMsg *messagev1.PushMessage) error {
 	var err error
 	for _, handler := range w.handlers {
-		err = multierr.Append(err, handler.OnReceiveFromBackend(conn, payload))
+		err = multierr.Append(err, handler.OnReceiveFromBackend(conn, pushMsg))
 	}
 	return err
 }

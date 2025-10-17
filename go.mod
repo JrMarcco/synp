@@ -7,6 +7,7 @@ require (
 	github.com/JrMarcco/jit v0.0.2
 	github.com/JrMarcco/synp-api v0.0.2
 	github.com/cenkalti/backoff/v5 v5.0.3
+	github.com/cespare/xxhash/v2 v2.3.0
 	github.com/go-redis/redis v6.15.9+incompatible
 	github.com/gobwas/httphead v0.1.0
 	github.com/gobwas/ws v1.4.0
@@ -25,7 +26,6 @@ require (
 
 require (
 	github.com/benbjohnson/clock v1.3.5 // indirect
-	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/coreos/go-semver v0.3.1 // indirect
 	github.com/coreos/go-systemd/v22 v22.6.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
