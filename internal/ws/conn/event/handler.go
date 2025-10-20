@@ -10,8 +10,8 @@ import (
 	commonv1 "github.com/JrMarcco/synp-api/api/go/common/v1"
 	messagev1 "github.com/JrMarcco/synp-api/api/go/message/v1"
 	"github.com/JrMarcco/synp/internal/pkg/codec"
-	"github.com/JrMarcco/synp/internal/ws/conn/message/downstream"
-	"github.com/JrMarcco/synp/internal/ws/conn/message/upstream"
+	"github.com/JrMarcco/synp/internal/pkg/message/downstream"
+	"github.com/JrMarcco/synp/internal/pkg/message/upstream"
 	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 )

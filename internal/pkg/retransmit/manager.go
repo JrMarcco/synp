@@ -7,6 +7,7 @@ import (
 	"github.com/JrMarcco/jit/xsync"
 	"github.com/JrMarcco/synp"
 	messagev1 "github.com/JrMarcco/synp-api/api/go/message/v1"
+	"github.com/JrMarcco/synp/internal/pkg/message"
 	"go.uber.org/zap"
 )
 
@@ -92,8 +93,6 @@ func (t *Task) stop() {
 	}
 }
 
-type TaskFunc func(conn synp.Conn, msg *messagev1.Message) error
-
 // Manager 为重传管理器，负责管理重传任务。
 // 重传使用固定间隔重试，直到成功或达到最大重传次数。
 type Manager struct {
@@ -103,7 +102,7 @@ type Manager struct {
 	retryInterval time.Duration // 重传间隔
 	maxRetryCnt   int32         // 最大重传次数
 
-	taskFunc TaskFunc
+	taskFunc message.MessagePushFunc
 	closed   atomic.Bool
 
 	logger *zap.Logger
@@ -203,7 +202,7 @@ func (m *Manager) Close() {
 	)
 }
 
-func NewManager(retryInterval time.Duration, maxRetryCnt int32, taskFunc TaskFunc, logger *zap.Logger) *Manager {
+func NewManager(retryInterval time.Duration, maxRetryCnt int32, taskFunc message.MessagePushFunc, logger *zap.Logger) *Manager {
 	if retryInterval <= 0 {
 		retryInterval = DefaultRetryInterval
 	}

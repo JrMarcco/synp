@@ -8,8 +8,8 @@ import (
 	"github.com/JrMarcco/synp"
 	messagev1 "github.com/JrMarcco/synp-api/api/go/message/v1"
 	"github.com/JrMarcco/synp/internal/pkg/codec"
-	"github.com/JrMarcco/synp/internal/pkg/xmq/producer"
-	"github.com/JrMarcco/synp/internal/ws/conn/message"
+	"github.com/JrMarcco/synp/internal/pkg/message"
+	"github.com/JrMarcco/synp/internal/pkg/xmq/produce"
 	"go.uber.org/zap"
 )
 
@@ -18,7 +18,7 @@ var _ UMsgHandler = (*FrontendMsgHandler)(nil)
 // FrontendMsgHandler 是前端消息处理器的实现，用于处理前端 ( 业务客户端 ) 发送的消息。
 type FrontendMsgHandler struct {
 	codec    codec.Codec
-	producer producer.Producer[*messagev1.Message]
+	producer produce.Producer[*messagev1.Message]
 
 	logger *zap.Logger
 }
