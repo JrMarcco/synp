@@ -200,3 +200,29 @@ func (h *EvtHandler) OnReceiveFromBackend(conn synp.Conn, msg *messagev1.PushMes
 
 	return h.dMsgHandler.Handle(conn, msg)
 }
+
+func NewEventHandler(
+	rdb redis.Cmdable,
+	cacheRequestTimeout time.Duration,
+	cacheExpiration time.Duration,
+	codec codec.Codec,
+	uMsgHandlers []upstream.UMsgHandler,
+	dMsgHandler downstream.DMsgHandler,
+	logger *zap.Logger,
+) synp.ConnEventHandler {
+	m := make(map[commonv1.CommandType]upstream.UMsgHandler)
+	for _, handler := range uMsgHandlers {
+		m[handler.CmdType()] = handler
+	}
+
+	return &EvtHandler{
+		rdb:                 rdb,
+		cacheRequestTimeout: cacheRequestTimeout,
+		cacheExpiration:     cacheExpiration,
+		codec:               codec,
+		uMsgHandlers:        m,
+		dMsgHandler:         dMsgHandler,
+		logger:              logger,
+	}
+
+}

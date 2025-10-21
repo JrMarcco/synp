@@ -7,7 +7,7 @@ import (
 	"go.uber.org/zap"
 )
 
-var MessagePushFxOpt = fx.Module("message_push", fx.Provide(InitMessagePush))
+var MessagePushFxOpt = fx.Module("message_push", fx.Provide(InitMessagePushFunc))
 
 type messagePushFuncFxParams struct {
 	fx.In
@@ -16,6 +16,6 @@ type messagePushFuncFxParams struct {
 	Logger *zap.Logger
 }
 
-func InitMessagePush(params messagePushFuncFxParams) message.MessagePushFunc {
-	return message.DefaultMessagePushFunc(params.Codec, params.Logger)
+func InitMessagePushFunc(params messagePushFuncFxParams) message.PushFunc {
+	return message.DefaultPushFunc(params.Codec, params.Logger)
 }

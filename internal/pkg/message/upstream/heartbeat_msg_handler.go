@@ -2,6 +2,7 @@ package upstream
 
 import (
 	"github.com/JrMarcco/synp"
+	commonv1 "github.com/JrMarcco/synp-api/api/go/common/v1"
 	messagev1 "github.com/JrMarcco/synp-api/api/go/message/v1"
 	"github.com/JrMarcco/synp/internal/pkg/message"
 	"go.uber.org/zap"
@@ -11,7 +12,7 @@ var _ UMsgHandler = (*HeartbeatMsgHandler)(nil)
 
 // HeartbeatMsgHandler 是心跳消息处理器的实现，用于处理心跳消息。
 type HeartbeatMsgHandler struct {
-	pushFunc message.MessagePushFunc
+	pushFunc message.PushFunc
 	logger   *zap.Logger
 }
 
@@ -26,7 +27,11 @@ func (h *HeartbeatMsgHandler) Handle(conn synp.Conn, msg *messagev1.Message) err
 	return h.pushFunc(conn, msg)
 }
 
-func NewHeartbeatMsgHandler(pushFunc message.MessagePushFunc, logger *zap.Logger) *HeartbeatMsgHandler {
+func (h *HeartbeatMsgHandler) CmdType() commonv1.CommandType {
+	return commonv1.CommandType_COMMAND_TYPE_HEARTBEAT
+}
+
+func NewHeartbeatMsgHandler(pushFunc message.PushFunc, logger *zap.Logger) *HeartbeatMsgHandler {
 	return &HeartbeatMsgHandler{
 		pushFunc: pushFunc,
 		logger:   logger,

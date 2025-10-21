@@ -17,23 +17,32 @@ func main() {
 			return &fxevent.ZapLogger{Logger: logger}
 		}),
 
-		// 初始化 zap.Logger
+		// 初始化 zap.Logger。
 		ioc.LoggerFxOpt,
 
-		// 初始化 etcd.Client
+		// 初始化 etcd.Client。
 		ioc.EtcdFxOpt,
 
-		// 初始化 redis.Cmdable
+		// 初始化 redis.Cmdable。
 		ioc.RedisFxOpt,
 
-		// 初始化 token validator
+		// 初始化 kafka。
+		ioc.KafkaFxOpt,
+
+		// 初始化 token validator。
 		ioc.ValidatorFxOpt,
 
-		// 初始化 message push func
+		// 初始化 message push func。
 		ioc.MessagePushFxOpt,
 
-		// 初始化 retransmit manager
+		// 初始化 retransmit manager。
 		ioc.RetransmitManagerFxOpt,
+
+		// 初始化 message handler。
+		ioc.MessageHandlerFxOpt,
+
+		// 初始化 event handler。
+		ioc.EventHandlerFxOpt,
 	).Run()
 }
 

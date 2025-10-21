@@ -102,7 +102,7 @@ type Manager struct {
 	retryInterval time.Duration // 重传间隔
 	maxRetryCnt   int32         // 最大重传次数
 
-	taskFunc message.MessagePushFunc
+	taskFunc message.PushFunc
 	closed   atomic.Bool
 
 	logger *zap.Logger
@@ -202,7 +202,7 @@ func (m *Manager) Close() {
 	)
 }
 
-func NewManager(retryInterval time.Duration, maxRetryCnt int32, taskFunc message.MessagePushFunc, logger *zap.Logger) *Manager {
+func NewManager(retryInterval time.Duration, maxRetryCnt int32, taskFunc message.PushFunc, logger *zap.Logger) *Manager {
 	if retryInterval <= 0 {
 		retryInterval = DefaultRetryInterval
 	}

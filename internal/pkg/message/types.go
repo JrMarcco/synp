@@ -13,9 +13,9 @@ var (
 	ErrMarshalMessage = errors.New("failed to marshal message")
 )
 
-type MessagePushFunc func(conn synp.Conn, msg *messagev1.Message) error
+type PushFunc func(conn synp.Conn, msg *messagev1.Message) error
 
-// DefaultMessagePushFunc 创建默认推送消息到前端 ( 业务客户端 ) 的函数的默认实现，用于将结构化消息通过连接发送。
+// DefaultPushFunc 创建默认推送消息到前端 ( 业务客户端 ) 的函数的默认实现，用于将结构化消息通过连接发送。
 // 该函数将消息编码后通过 Conn.Send 发送，适用于 retransmit.Manager 的 taskFunc 参数。
 //
 // 参数：
@@ -24,7 +24,7 @@ type MessagePushFunc func(conn synp.Conn, msg *messagev1.Message) error
 //
 // 返回：
 //   - retransmit.TaskFunc: 可用于发送消息和重传的函数
-func DefaultMessagePushFunc(codec codec.Codec, logger *zap.Logger) MessagePushFunc {
+func DefaultPushFunc(codec codec.Codec, logger *zap.Logger) PushFunc {
 	return func(conn synp.Conn, msg *messagev1.Message) error {
 		payload, err := codec.Marshal(msg)
 		if err != nil {

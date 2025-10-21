@@ -1,6 +1,15 @@
 profile:
   env: "dev"
 
+handler:
+  event:
+    cache_request_timeout: 10000
+    cache_expiration: 10000
+  message:
+    frontend:
+      topic: "frontend"
+      on_receive_timeout: 10000
+
 # Kafka 配置
 # 使用 SASL/SCRAM-SHA-256 + TLS 认证
 kafka:
@@ -43,7 +52,7 @@ kafka:
   # TLS 配置
   tls:
     # CA 证书文件路径（必需）
-    ca_file: "/etc/kafka/certs/ca.crt"
+    ca_file: "/etc/certs/kafka/ca.crt"
     # 是否跳过证书验证（生产环境必须设置为 false）
     insecure_skip_verify: false
 

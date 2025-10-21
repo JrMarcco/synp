@@ -16,7 +16,7 @@ var RetransmitManagerFxOpt = fx.Module("retransmit_manager", fx.Provide(InitRetr
 type retransmitManagerFxParams struct {
 	fx.In
 
-	PushFunc message.MessagePushFunc
+	PushFunc message.PushFunc
 	Logger   *zap.Logger
 
 	Lifecycle fx.Lifecycle

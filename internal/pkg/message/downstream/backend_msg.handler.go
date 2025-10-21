@@ -13,7 +13,7 @@ var _ DMsgHandler = (*BackendMsgHandler)(nil)
 
 // BackendMsgHandler 是 backend 消息处理器的实现，用于处理后端推送的消息。
 type BackendMsgHandler struct {
-	pushFunc          message.MessagePushFunc
+	pushFunc          message.PushFunc
 	retransmitManager *retransmit.Manager
 	logger            *zap.Logger
 }
@@ -39,7 +39,7 @@ func (h *BackendMsgHandler) Handle(conn synp.Conn, pushMsg *messagev1.PushMessag
 }
 
 func NewBackendMsgHandler(
-	pushFunc message.MessagePushFunc,
+	pushFunc message.PushFunc,
 	retransmitManager *retransmit.Manager,
 	logger *zap.Logger,
 ) *BackendMsgHandler {
