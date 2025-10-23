@@ -8,7 +8,7 @@ import (
 //go:generate mockgen -source=./types.go -destination=./mock/session.mock.go -package=sessionmock -typed Session
 
 type Session interface {
-	UserInfo() User
+	User() User
 
 	Set(ctx context.Context, key string, val string) error
 	Get(ctx context.Context, key string) (string, error)
@@ -21,14 +21,29 @@ type Builder interface {
 	Build(ctx context.Context, user User) (Session, bool, error)
 }
 
+// Device 设备类型
+type Device string
+
+const (
+	DeviceMobile  Device = "mobile"
+	DeviceTablet  Device = "tablet"
+	DevicePC      Device = "pc"
+	DeviceUnknown Device = "unknown"
+)
+
 // User 为 Session 的用户信息。
 type User struct {
 	Bid       uint64 `json:"bid"`
 	Uid       uint64 `json:"uid"`
+	Device    Device `json:"device"`     // 设备类型：mobile/tablet/pc
 	AutoClose bool   `json:"auto_close"` // 空闲时是否自动关闭连接
 }
 
-func (u *User) UniqueId() string {
+func (u *User) ConnId() string {
+	return fmt.Sprintf("%d:%d:%s", u.Bid, u.Uid, u.Device)
+}
+
+func (u *User) ConnKey() string {
 	return fmt.Sprintf("%d:%d", u.Bid, u.Uid)
 }
 

@@ -146,6 +146,32 @@ func (u *Upgrader) extractToken(uri []byte) (string, error) {
 	return token, nil
 }
 
+// extractDevice 从 URI 中提取设备类型。
+func (u *Upgrader) extractDevice(uri []byte) session.Device {
+	parsedURL, err := url.Parse(string(uri))
+	if err != nil {
+		return session.DeviceUnknown
+	}
+
+	queryParam := parsedURL.Query().Get("device")
+	if queryParam == "" {
+		return session.DeviceUnknown
+	}
+
+	// 校验并转换设备类型。
+	device := session.Device(queryParam)
+	switch device {
+	case session.DeviceMobile, session.DeviceTablet, session.DevicePC:
+		return device
+	default:
+		u.logger.Warn(
+			"[synp-upgrader] invalid device type, using unknown",
+			zap.String("device", string(device)),
+		)
+		return session.DeviceUnknown
+	}
+}
+
 // getUserInfo 从 URI 中获取用户信息。
 func (u *Upgrader) extractUserInfo(uri []byte) (session.User, error) {
 	token, err := u.extractToken(uri)
@@ -160,5 +186,10 @@ func (u *Upgrader) extractUserInfo(uri []byte) (session.User, error) {
 		u.logger.Error("[synp-upgrader] failed to validate token", zap.Error(err))
 		return session.User{}, fmt.Errorf("%w: %w", ErrInvalidToken, err)
 	}
+
+	// 从 URI 中提取设备类型。
+	device := u.extractDevice(uri)
+	user.Device = device
+
 	return user, nil
 }

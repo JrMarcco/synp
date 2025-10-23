@@ -25,13 +25,12 @@ var _ session.Session = (*Session)(nil)
 type Session struct {
 	rdb redis.Cmdable
 
-	key      string
-	userInfo session.User
+	key  string
+	user session.User
 }
 
-func (s *Session) UserInfo() session.User {
-	//TODO: not implemented
-	panic("not implemented")
+func (s *Session) User() session.User {
+	return s.user
 }
 
 func (s *Session) Set(ctx context.Context, key string, val string) error {
@@ -72,9 +71,9 @@ func (s *Session) saveToRedis(ctx context.Context) error {
 
 func newSession(rdb redis.Cmdable, user session.User) *Session {
 	return &Session{
-		rdb:      rdb,
-		key:      user.SessionKey(),
-		userInfo: user,
+		rdb:  rdb,
+		key:  user.SessionKey(),
+		user: user,
 	}
 }
 

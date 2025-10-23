@@ -45,7 +45,7 @@ type EvtHandler struct {
 func (h *EvtHandler) OnConnect(conn synp.Conn) error {
 	h.logger.Debug(
 		"[synp-conn-evt-handler] connection connected",
-		zap.String("connection_id", conn.Id()),
+		zap.String("conn_id", conn.Id()),
 	)
 	return nil
 }
@@ -53,7 +53,7 @@ func (h *EvtHandler) OnConnect(conn synp.Conn) error {
 func (h *EvtHandler) OnDisconnect(conn synp.Conn) error {
 	h.logger.Debug(
 		"[synp-conn-evt-handler] connection disconnected",
-		zap.String("connection_id", conn.Id()),
+		zap.String("conn_id", conn.Id()),
 	)
 	return conn.Close()
 }
@@ -65,22 +65,22 @@ func (h *EvtHandler) OnReceiveFromFrontend(conn synp.Conn, payload []byte) error
 		h.logger.Error(
 			"[synp-conn-evt-handler] failed to decode payload",
 			zap.String("step", "on_receive_from_frontend"),
-			zap.String("connection_id", conn.Id()),
-			zap.Any("user", conn.Session().UserInfo()),
+			zap.String("conn_id", conn.Id()),
+			zap.Any("user", conn.Session().User()),
 			zap.Error(err),
 		)
 		return err
 	}
 
 	// 消息去重（幂等）。
-	user := conn.Session().UserInfo()
+	user := conn.Session().User()
 	ok, err := h.cacheMessage(user.Bid, msg)
 	if err != nil {
 		h.logger.Error(
 			"[synp-conn-evt-handler] failed to cache message",
 			zap.String("step", "on_receive_from_frontend"),
-			zap.String("connection_id", conn.Id()),
-			zap.Any("user", conn.Session().UserInfo()),
+			zap.String("conn_id", conn.Id()),
+			zap.Any("user", conn.Session().User()),
 			zap.Error(err),
 		)
 		return fmt.Errorf("%w: %w", ErrCacheMessage, err)
@@ -90,9 +90,9 @@ func (h *EvtHandler) OnReceiveFromFrontend(conn synp.Conn, payload []byte) error
 		h.logger.Warn(
 			"[synp-conn-evt-handler] message duplicated, ignore it",
 			zap.String("step", "on_receive_from_frontend"),
-			zap.String("connection_id", conn.Id()),
+			zap.String("conn_id", conn.Id()),
 			zap.String("message_id", msg.GetMessageId()),
-			zap.Any("user", conn.Session().UserInfo()),
+			zap.Any("user", conn.Session().User()),
 		)
 		return ErrMessageDuplicated
 	}
@@ -100,9 +100,9 @@ func (h *EvtHandler) OnReceiveFromFrontend(conn synp.Conn, payload []byte) error
 	h.logger.Info(
 		"[synp-conn-evt-handler] received message from frontend",
 		zap.String("step", "on_receive_from_frontend"),
-		zap.String("connection_id", conn.Id()),
+		zap.String("conn_id", conn.Id()),
 		zap.String("message", msg.String()),
-		zap.Any("user", conn.Session().UserInfo()),
+		zap.Any("user", conn.Session().User()),
 	)
 
 	// 处理消息。
@@ -111,8 +111,8 @@ func (h *EvtHandler) OnReceiveFromFrontend(conn synp.Conn, payload []byte) error
 		h.logger.Error(
 			"[synp-conn-evt-handler] unknown message type from frontend",
 			zap.String("step", "on_receive_from_frontend"),
-			zap.String("connection_id", conn.Id()),
-			zap.Any("user", conn.Session().UserInfo()),
+			zap.String("conn_id", conn.Id()),
+			zap.Any("user", conn.Session().User()),
 		)
 		return ErrUnknownMessageType
 	}
@@ -125,7 +125,7 @@ func (h *EvtHandler) OnReceiveFromFrontend(conn synp.Conn, payload []byte) error
 				h.logger.Error(
 					"[synp-conn-evt-handler] failed to uncache message",
 					zap.String("step", "on_receive_from_frontend"),
-					zap.String("connection_id", conn.Id()),
+					zap.String("conn_id", conn.Id()),
 					zap.String("message", msg.String()),
 					zap.Error(uncacheErr),
 				)

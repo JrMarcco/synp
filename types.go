@@ -42,9 +42,12 @@ type Conn interface {
 
 type ConnManager interface {
 	NewConn(ctx context.Context, netConn net.Conn, sess session.Session, compressionState *compression.State) (Conn, error)
-	RemoveConn(id string) bool
 
-	FindByUser(user session.User) (Conn, bool)
+	RemoveConn(connKey string, device session.Device) bool
+	RemoveUserConns(connKey string) bool
+
+	FindConn(connKey string, device session.Device) (Conn, bool)
+	FindUserConns(connKey string) ([]Conn, bool)
 }
 
 // ConnEventHandler 是连接事件的回调接口。

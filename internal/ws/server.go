@@ -143,8 +143,10 @@ func (s *Server) handleConn(conn net.Conn) {
 		)
 		return
 	}
+
+	user := synpConn.Session().User()
 	defer func() {
-		s.connManager.RemoveConn(synpConn.Id())
+		s.connManager.RemoveConn(user.ConnKey(), user.Device)
 		if err := synpConn.Close(); err != nil {
 			s.logger.Error(
 				"[synp-server] failed to close synp connection",
