@@ -29,6 +29,9 @@ func main() {
 		// 初始化 kafka。
 		ioc.KafkaFxOpt,
 
+		// 初始化 kafka consumer。
+		ioc.KafkaConsumerFxOpt,
+
 		// 初始化 token validator。
 		ioc.ValidatorFxOpt,
 
@@ -40,9 +43,6 @@ func main() {
 
 		// 初始化 message handler。
 		ioc.MessageHandlerFxOpt,
-
-		// 初始化 event handler。
-		ioc.EventHandlerFxOpt,
 	).Run()
 }
 

@@ -2,10 +2,12 @@ package ioc
 
 import (
 	"context"
+	"log/slog"
 
 	"github.com/spf13/viper"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
+	"go.uber.org/zap/exp/zapslog"
 )
 
 var LoggerFxOpt = fx.Module("logger", fx.Provide(InitLogger))
@@ -39,6 +41,9 @@ func InitLogger(params loggerFxParams) *zap.Logger {
 	if err != nil {
 		panic(err)
 	}
+
+	// 初始化 slog
+	slog.SetDefault(slog.New(zapslog.NewHandler(logger.Core())))
 
 	params.Lifecycle.Append(fx.Hook{
 		OnStop: func(ctx context.Context) error {

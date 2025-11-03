@@ -50,7 +50,7 @@ func (h *FrontendMsgHandler) Handle(conn synp.Conn, msg *messagev1.Message) erro
 	if err != nil {
 		h.logger.Error(
 			"[synp-frontend-msg-handler] failed to marshal ack payload",
-			zap.String("step", "frontend_msg_handle"),
+			zap.String("conn_id", conn.Id()),
 			zap.String("ack_payload", ackPayload.String()),
 			zap.Error(err),
 		)
@@ -71,7 +71,6 @@ func (h *FrontendMsgHandler) forwardToBackend(msg *messagev1.Message) error {
 	if err != nil {
 		h.logger.Error(
 			"[synp-frontend-msg-handler] failed to marshal message",
-			zap.String("step", "frontend_msg_handle"),
 			zap.String("message", msg.String()),
 			zap.Error(err),
 		)
@@ -90,7 +89,6 @@ func (h *FrontendMsgHandler) forwardToBackend(msg *messagev1.Message) error {
 	if err := h.producer.Produce(ctx, mqMsg); err != nil {
 		h.logger.Error(
 			"[synp-frontend-msg-handler] failed to forward message to backend with messsage queue",
-			zap.String("step", "frontend_msg_handle"),
 			zap.Error(err),
 		)
 		return fmt.Errorf("failed to forward message: %w", err)

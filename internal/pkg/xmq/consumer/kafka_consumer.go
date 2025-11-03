@@ -4,39 +4,57 @@ import (
 	"context"
 	"errors"
 	"io"
+	"log/slog"
 	"sync"
 
 	"github.com/JrMarcco/synp/internal/pkg/xmq"
 	"github.com/segmentio/kafka-go"
-	"go.uber.org/zap"
 )
 
 // KafkaReaderFactory 是创建 kafka Reader 的工厂函数。
 type KafkaReaderFactory func(topic string, groupId string) *kafka.Reader
+
+var _ ConsumerFactory = (*KafkaConsumerFactory)(nil)
+
+// KafkaConsumerFactory 是 kafka 消费者工厂。
+// 负责创建 kafka 消费者。
+type KafkaConsumerFactory struct {
+	readerFactory KafkaReaderFactory
+}
+
+func (f *KafkaConsumerFactory) NewConsumer(topic, groupId string) (Consumer, error) {
+	return NewKafkaConsumer(topic, groupId, f.readerFactory), nil
+}
+
+func NewKafkaConsumerFactory(readerFactory KafkaReaderFactory) *KafkaConsumerFactory {
+	return &KafkaConsumerFactory{
+		readerFactory: readerFactory,
+	}
+}
 
 var _ Consumer = (*KafkaConsumer)(nil)
 
 // KafkaConsumer 是 kafka 消费者。
 // 负责从 kafka 中消费消息，并转换为 xmq.Message。
 type KafkaConsumer struct {
-	readerFactory KafkaReaderFactory
-	reader        *kafka.Reader
-
 	topic   string
 	groupId string
 
+	reader *kafka.Reader
+
 	messageChan chan *xmq.Message
 
+	// 用于控制消费者生命周期。
 	ctx        context.Context
 	cancelFunc context.CancelFunc
 
 	closeOnce sync.Once
-
-	logger *zap.Logger
 }
 
 func (c *KafkaConsumer) Consume(ctx context.Context) (*xmq.Message, error) {
 	select {
+	case <-c.ctx.Done():
+		return nil, c.ctx.Err()
 	case <-ctx.Done():
 		return nil, ctx.Err()
 	case msg, ok := <-c.messageChan:
@@ -69,12 +87,11 @@ func (c *KafkaConsumer) readMessage() {
 			if errors.Is(err, io.ErrClosedPipe) || errors.Is(err, io.EOF) || errors.Is(err, context.Canceled) {
 				return
 			}
-
-			c.logger.Error(
+			slog.Error(
 				"[synp-xmq-consumer] failed to read message from kafka",
-				zap.String("topic", c.topic),
-				zap.String("group_id", c.groupId),
-				zap.Error(err),
+				"topic", c.topic,
+				"group_id", c.groupId,
+				"error", err,
 			)
 			continue
 		}
@@ -115,21 +132,20 @@ func (c *KafkaConsumer) Close() error {
 	return err
 }
 
-func NewConsumer(readerFactory KafkaReaderFactory, topic, groupId string, partitions int32, logger *zap.Logger) *KafkaConsumer {
+func NewKafkaConsumer(topic, groupId string, readerFactory KafkaReaderFactory) *KafkaConsumer {
 	ctx, cancel := context.WithCancel(context.Background())
 
+	reader := readerFactory(topic, groupId)
 	consumer := &KafkaConsumer{
-		readerFactory: readerFactory,
-
 		topic:   topic,
 		groupId: groupId,
+
+		reader: reader,
 
 		messageChan: make(chan *xmq.Message),
 
 		ctx:        ctx,
 		cancelFunc: cancel,
-
-		logger: logger,
 	}
 
 	go consumer.readMessage()

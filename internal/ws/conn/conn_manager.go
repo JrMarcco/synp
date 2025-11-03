@@ -245,7 +245,7 @@ func (m *ConnManager) RemoveConn(connKey string, device session.Device) bool {
 	return ok
 }
 
-func (m *ConnManager) RemoveUserConns(connKey string) bool {
+func (m *ConnManager) RemoveUserConn(connKey string) bool {
 	dc, ok := m.conns.Load(connKey)
 	if !ok {
 		return false
@@ -271,7 +271,7 @@ func (m *ConnManager) FindConn(connKey string, device session.Device) (synp.Conn
 	return conn, true
 }
 
-func (m *ConnManager) FindUserConns(connKey string) ([]synp.Conn, bool) {
+func (m *ConnManager) FindUserConn(connKey string) ([]synp.Conn, bool) {
 	dc, ok := m.conns.Load(connKey)
 	if !ok {
 		return nil, false

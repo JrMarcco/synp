@@ -7,16 +7,14 @@ import (
 	"github.com/JrMarcco/synp/internal/pkg/codec"
 	"github.com/JrMarcco/synp/internal/pkg/message/downstream"
 	"github.com/JrMarcco/synp/internal/pkg/message/upstream"
-	"github.com/JrMarcco/synp/internal/ws/conn/event"
+	"github.com/JrMarcco/synp/internal/ws/conn/lifecycle"
 	"github.com/redis/go-redis/v9"
 	"github.com/spf13/viper"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 )
 
-var EventHandlerFxOpt = fx.Module("event_handler", fx.Provide(InitEventHandler))
-
-type eventHandlerFxParams struct {
+type connLifecycleHandlerFxParams struct {
 	fx.In
 
 	Rdb redis.Cmdable
@@ -29,7 +27,7 @@ type eventHandlerFxParams struct {
 	Logger *zap.Logger
 }
 
-func InitEventHandler(params eventHandlerFxParams) synp.ConnEventHandler {
+func InitConnLifecycleHandler(params connLifecycleHandlerFxParams) synp.Handler {
 	type config struct {
 		CacheRequestTimeout int `mapstructure:"cache_request_timeout"`
 		CacheExpiration     int `mapstructure:"cache_expiration"`
@@ -40,7 +38,7 @@ func InitEventHandler(params eventHandlerFxParams) synp.ConnEventHandler {
 		panic(err)
 	}
 
-	return event.NewEventHandler(
+	return lifecycle.NewHandler(
 		params.Rdb,
 		time.Duration(cfg.CacheRequestTimeout)*time.Millisecond,
 		time.Duration(cfg.CacheExpiration)*time.Millisecond,

@@ -44,14 +44,14 @@ type ConnManager interface {
 	NewConn(ctx context.Context, netConn net.Conn, sess session.Session, compressionState *compression.State) (Conn, error)
 
 	RemoveConn(connKey string, device session.Device) bool
-	RemoveUserConns(connKey string) bool
+	RemoveUserConn(connKey string) bool
 
 	FindConn(connKey string, device session.Device) (Conn, bool)
-	FindUserConns(connKey string) ([]Conn, bool)
+	FindUserConn(connKey string) ([]Conn, bool)
 }
 
-// ConnEventHandler 是连接事件的回调接口。
-type ConnEventHandler interface {
+// Handler 是连接生命周期相关事件的回调接口。
+type Handler interface {
 	OnConnect(conn Conn) error
 	OnDisconnect(conn Conn) error
 
@@ -62,13 +62,14 @@ type ConnEventHandler interface {
 	OnReceiveFromBackend(conn Conn, pushMsg *messagev1.PushMessage) error
 }
 
-type ConnEventHandlerWrapper struct {
-	handlers []ConnEventHandler
+// HandlerWrapper 是 Handler 的包装器，用于组合多个 Handler。
+type HandlerWrapper struct {
+	handlers []Handler
 }
 
-var _ ConnEventHandler = (*ConnEventHandlerWrapper)(nil)
+var _ Handler = (*HandlerWrapper)(nil)
 
-func (w *ConnEventHandlerWrapper) OnConnect(conn Conn) error {
+func (w *HandlerWrapper) OnConnect(conn Conn) error {
 	var err error
 	for _, handler := range w.handlers {
 		err = multierr.Append(err, handler.OnConnect(conn))
@@ -76,7 +77,7 @@ func (w *ConnEventHandlerWrapper) OnConnect(conn Conn) error {
 	return err
 }
 
-func (w *ConnEventHandlerWrapper) OnDisconnect(conn Conn) error {
+func (w *HandlerWrapper) OnDisconnect(conn Conn) error {
 	var err error
 	for _, handler := range w.handlers {
 		err = multierr.Append(err, handler.OnDisconnect(conn))
@@ -84,7 +85,7 @@ func (w *ConnEventHandlerWrapper) OnDisconnect(conn Conn) error {
 	return err
 }
 
-func (w *ConnEventHandlerWrapper) OnReceiveFromFrontend(conn Conn, payload []byte) error {
+func (w *HandlerWrapper) OnReceiveFromFrontend(conn Conn, payload []byte) error {
 	var err error
 	for _, handler := range w.handlers {
 		handleErr := handler.OnReceiveFromFrontend(conn, payload)
@@ -97,7 +98,7 @@ func (w *ConnEventHandlerWrapper) OnReceiveFromFrontend(conn Conn, payload []byt
 	return err
 }
 
-func (w *ConnEventHandlerWrapper) OnReceiveFromBackend(conn Conn, pushMsg *messagev1.PushMessage) error {
+func (w *HandlerWrapper) OnReceiveFromBackend(conn Conn, pushMsg *messagev1.PushMessage) error {
 	var err error
 	for _, handler := range w.handlers {
 		err = multierr.Append(err, handler.OnReceiveFromBackend(conn, pushMsg))
@@ -105,8 +106,8 @@ func (w *ConnEventHandlerWrapper) OnReceiveFromBackend(conn Conn, pushMsg *messa
 	return err
 }
 
-func NewConnEventHandlerWrapper(handlers ...ConnEventHandler) *ConnEventHandlerWrapper {
-	return &ConnEventHandlerWrapper{
+func NewHandlerWrapper(handlers ...Handler) *HandlerWrapper {
+	return &HandlerWrapper{
 		handlers: handlers,
 	}
 }

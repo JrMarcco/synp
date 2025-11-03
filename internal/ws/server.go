@@ -8,6 +8,7 @@ import (
 
 	"github.com/JrMarcco/synp"
 	"github.com/JrMarcco/synp/internal/pkg/limiter"
+	"github.com/JrMarcco/synp/internal/pkg/xmq/consumer"
 	wsc "github.com/JrMarcco/synp/internal/ws/conn"
 	"github.com/cenkalti/backoff/v5"
 	"go.uber.org/zap"
@@ -20,7 +21,9 @@ type Server struct {
 
 	upgrader       synp.Upgrader
 	connManager    synp.ConnManager
-	connEvtHandler synp.ConnEventHandler
+	connEvtHandler synp.Handler
+
+	consumers map[string]consumer.Consumer
 
 	connLimiter *limiter.TokenLimiter
 	backoff     *backoff.ExponentialBackOff
@@ -61,7 +64,6 @@ func (s *Server) acceptConn() {
 
 			s.logger.Warn(
 				"[synp-server] connection limit reached, reject new connection",
-				zap.String("step", "accept_conn"),
 				zap.Duration("next_backoff", next),
 			)
 			time.Sleep(next)
@@ -78,7 +80,6 @@ func (s *Server) acceptConn() {
 
 			s.logger.Error(
 				"[synp-server] failed to accept connection",
-				zap.String("step", "accept_conn"),
 				zap.Error(err),
 			)
 			if errors.Is(err, net.ErrClosed) {
@@ -115,7 +116,6 @@ func (s *Server) handleConn(conn net.Conn) {
 		if err != nil && !errors.Is(err, net.ErrClosed) {
 			s.logger.Warn(
 				"[synp-server] failed to close connection",
-				zap.String("step", "handle_conn"),
 				zap.Error(err),
 			)
 		}
@@ -126,7 +126,6 @@ func (s *Server) handleConn(conn net.Conn) {
 	if err != nil {
 		s.logger.Error(
 			"[synp-server] failed to upgrade connection from HTTP to WebSocket",
-			zap.String("step", "handle_conn"),
 			zap.Error(err),
 		)
 		return
@@ -138,7 +137,6 @@ func (s *Server) handleConn(conn net.Conn) {
 	if err != nil {
 		s.logger.Error(
 			"[synp-server] failed to create synp connection",
-			zap.String("step", "handle_conn"),
 			zap.Error(err),
 		)
 		return
@@ -150,8 +148,7 @@ func (s *Server) handleConn(conn net.Conn) {
 		if err := synpConn.Close(); err != nil {
 			s.logger.Error(
 				"[synp-server] failed to close synp connection",
-				zap.String("step", "handle_conn"),
-				zap.String("connection_id", synpConn.Id()),
+				zap.String("conn_id", synpConn.Id()),
 				zap.Error(err),
 			)
 		}
@@ -160,8 +157,8 @@ func (s *Server) handleConn(conn net.Conn) {
 	// 处理 on connect & on disconnect 事件。
 	if err := s.connEvtHandler.OnConnect(synpConn); err != nil {
 		s.logger.Error(
-			"[synp-server] failed to handle on connect event",
-			zap.String("step", "handle_conn"),
+			"[synp-server] failed to handle on connect lifecycle event",
+			zap.String("conn_id", synpConn.Id()),
 			zap.Error(err),
 		)
 		// on connect 事件失败，直接返回。
@@ -172,8 +169,8 @@ func (s *Server) handleConn(conn net.Conn) {
 	defer func() {
 		if err := s.connEvtHandler.OnDisconnect(synpConn); err != nil {
 			s.logger.Error(
-				"[synp-server] failed to handle on disconnect event",
-				zap.String("step", "handle_conn"),
+				"[synp-server] failed to handle on disconnect lifecycle event",
+				zap.String("conn_id", synpConn.Id()),
 				zap.Error(err),
 			)
 		}
@@ -190,7 +187,6 @@ func (s *Server) handleConn(conn net.Conn) {
 				// 处理前端（业务客户端）发送的消息失败。
 				s.logger.Error(
 					"[synp-server] failed to handle on receive from frontend event",
-					zap.String("step", "handle_conn"),
 					zap.Error(err),
 				)
 
@@ -200,16 +196,10 @@ func (s *Server) handleConn(conn net.Conn) {
 				}
 			}
 		case <-synpConn.Closed():
-			s.logger.Info(
-				"[synp-server] synp connection has been closed",
-				zap.String("step", "handle_conn"),
-			)
+			s.logger.Info("[synp-server] synp connection has been closed")
 			return
 		case <-s.ctx.Done():
-			s.logger.Info(
-				"[synp-server] server has been closed",
-				zap.String("step", "handle_conn"),
-			)
+			s.logger.Info("[synp-server] server has been closed")
 			return
 		}
 	}
@@ -227,7 +217,7 @@ func (s *Server) Shutdown() error {
 }
 
 func (s *Server) GracefulShutdown() error {
-
+	//TODO: 优雅关闭。
 	<-s.ctx.Done()
 	return s.Shutdown()
 }

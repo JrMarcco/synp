@@ -19,13 +19,6 @@ import (
 
 var KafkaFxOpt = fx.Module("kafka", fx.Provide(InitKafka))
 
-type kafkaFxParams struct {
-	fx.In
-
-	Logger    *zap.Logger
-	Lifecycle fx.Lifecycle
-}
-
 type kafkaFxResult struct {
 	fx.Out
 
@@ -210,6 +203,13 @@ func createTransport(tlsConfig *tls.Config, saslMechanism sasl.Mechanism) *kafka
 	return transport
 }
 
+type kafkaFxParams struct {
+	fx.In
+
+	Logger    *zap.Logger
+	Lifecycle fx.Lifecycle
+}
+
 func InitKafka(params kafkaFxParams) kafkaFxResult {
 	cfg := loadKafkaConfig(params.Logger)
 
@@ -279,9 +279,9 @@ func InitKafka(params kafkaFxParams) kafkaFxResult {
 
 		params.Logger.Info(
 			"[synp-ioc] created kafka reader",
+			zap.Strings("brokers", cfg.Brokers),
 			zap.String("topic", topic),
 			zap.String("group_id", groupId),
-			zap.Strings("brokers", cfg.Brokers),
 		)
 
 		return reader

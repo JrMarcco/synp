@@ -2,17 +2,16 @@ package produce
 
 import (
 	"context"
+	"log/slog"
 
 	"github.com/JrMarcco/synp/internal/pkg/xmq"
 	"github.com/segmentio/kafka-go"
-	"go.uber.org/zap"
 )
 
 var _ Producer = (*KafkaProducer)(nil)
 
 type KafkaProducer struct {
 	writer *kafka.Writer
-	logger *zap.Logger
 }
 
 func (p *KafkaProducer) Produce(ctx context.Context, msg *xmq.Message) error {
@@ -26,19 +25,17 @@ func (p *KafkaProducer) Produce(ctx context.Context, msg *xmq.Message) error {
 		return err
 	}
 
-	p.logger.Debug(
+	slog.Debug(
 		"[synp-xmq-producer] successfully produced message to kafka",
-		zap.String("topic", msg.Topic),
-		zap.Int64("offset", msg.Offset),
-		zap.String("message", string(msg.Val)),
+		"topic", msg.Topic,
+		"offset", msg.Offset,
+		"message", string(msg.Val),
 	)
-
 	return nil
 }
 
-func NewKafkaProducer(writer *kafka.Writer, logger *zap.Logger) *KafkaProducer {
+func NewKafkaProducer(writer *kafka.Writer) *KafkaProducer {
 	return &KafkaProducer{
 		writer: writer,
-		logger: logger,
 	}
 }

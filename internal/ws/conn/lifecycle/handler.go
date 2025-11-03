@@ -1,4 +1,4 @@
-package event
+package lifecycle
 
 import (
 	"context"
@@ -25,10 +25,10 @@ var (
 	ErrMaxRetryExceeded   = errors.New("max retry exceeded")
 )
 
-var _ synp.ConnEventHandler = (*EvtHandler)(nil)
+var _ synp.Handler = (*Handler)(nil)
 
-// EvtHandler 是连接事件的处理器。
-type EvtHandler struct {
+// Handler 是连接事件的处理器。
+type Handler struct {
 	rdb redis.Cmdable
 
 	cacheRequestTimeout time.Duration
@@ -42,29 +42,28 @@ type EvtHandler struct {
 	logger *zap.Logger
 }
 
-func (h *EvtHandler) OnConnect(conn synp.Conn) error {
+func (h *Handler) OnConnect(conn synp.Conn) error {
 	h.logger.Debug(
-		"[synp-conn-evt-handler] connection connected",
+		"[synp-conn-lifecycle-handler] connection connected",
 		zap.String("conn_id", conn.Id()),
 	)
 	return nil
 }
 
-func (h *EvtHandler) OnDisconnect(conn synp.Conn) error {
+func (h *Handler) OnDisconnect(conn synp.Conn) error {
 	h.logger.Debug(
-		"[synp-conn-evt-handler] connection disconnected",
+		"[synp-conn-lifecycle-handler] connection disconnected",
 		zap.String("conn_id", conn.Id()),
 	)
 	return conn.Close()
 }
 
-func (h *EvtHandler) OnReceiveFromFrontend(conn synp.Conn, payload []byte) error {
+func (h *Handler) OnReceiveFromFrontend(conn synp.Conn, payload []byte) error {
 	// 解析 payload。
 	msg, err := h.decodePayload(payload)
 	if err != nil {
 		h.logger.Error(
-			"[synp-conn-evt-handler] failed to decode payload",
-			zap.String("step", "on_receive_from_frontend"),
+			"[synp-conn-lifecycle-handler] failed to decode payload",
 			zap.String("conn_id", conn.Id()),
 			zap.Any("user", conn.Session().User()),
 			zap.Error(err),
@@ -77,8 +76,7 @@ func (h *EvtHandler) OnReceiveFromFrontend(conn synp.Conn, payload []byte) error
 	ok, err := h.cacheMessage(user.Bid, msg)
 	if err != nil {
 		h.logger.Error(
-			"[synp-conn-evt-handler] failed to cache message",
-			zap.String("step", "on_receive_from_frontend"),
+			"[synp-conn-lifecycle-handler] failed to cache message",
 			zap.String("conn_id", conn.Id()),
 			zap.Any("user", conn.Session().User()),
 			zap.Error(err),
@@ -88,8 +86,7 @@ func (h *EvtHandler) OnReceiveFromFrontend(conn synp.Conn, payload []byte) error
 
 	if !ok {
 		h.logger.Warn(
-			"[synp-conn-evt-handler] message duplicated, ignore it",
-			zap.String("step", "on_receive_from_frontend"),
+			"[synp-conn-lifecycle-handler] message duplicated, ignore it",
 			zap.String("conn_id", conn.Id()),
 			zap.String("message_id", msg.GetMessageId()),
 			zap.Any("user", conn.Session().User()),
@@ -99,7 +96,6 @@ func (h *EvtHandler) OnReceiveFromFrontend(conn synp.Conn, payload []byte) error
 
 	h.logger.Info(
 		"[synp-conn-evt-handler] received message from frontend",
-		zap.String("step", "on_receive_from_frontend"),
 		zap.String("conn_id", conn.Id()),
 		zap.String("message", msg.String()),
 		zap.Any("user", conn.Session().User()),
@@ -110,7 +106,6 @@ func (h *EvtHandler) OnReceiveFromFrontend(conn synp.Conn, payload []byte) error
 	if !ok {
 		h.logger.Error(
 			"[synp-conn-evt-handler] unknown message type from frontend",
-			zap.String("step", "on_receive_from_frontend"),
 			zap.String("conn_id", conn.Id()),
 			zap.Any("user", conn.Session().User()),
 		)
@@ -124,7 +119,6 @@ func (h *EvtHandler) OnReceiveFromFrontend(conn synp.Conn, payload []byte) error
 			if uncacheErr != nil {
 				h.logger.Error(
 					"[synp-conn-evt-handler] failed to uncache message",
-					zap.String("step", "on_receive_from_frontend"),
 					zap.String("conn_id", conn.Id()),
 					zap.String("message", msg.String()),
 					zap.Error(uncacheErr),
@@ -139,7 +133,7 @@ func (h *EvtHandler) OnReceiveFromFrontend(conn synp.Conn, payload []byte) error
 // 注：
 //
 //	这里解析的是整个消息字节流，消息体 ( body 字段 ) 需要另外解析。
-func (h *EvtHandler) decodePayload(payload []byte) (*messagev1.Message, error) {
+func (h *Handler) decodePayload(payload []byte) (*messagev1.Message, error) {
 	msg := &messagev1.Message{}
 	if err := h.codec.Unmarshal(payload, msg); err != nil {
 		return nil, fmt.Errorf("%w: unknown message type", ErrInvalidMessage)
@@ -153,7 +147,7 @@ func (h *EvtHandler) decodePayload(payload []byte) (*messagev1.Message, error) {
 	return msg, nil
 }
 
-func (h *EvtHandler) cacheMessage(bizId uint64, msg *messagev1.Message) (bool, error) {
+func (h *Handler) cacheMessage(bizId uint64, msg *messagev1.Message) (bool, error) {
 	if msg.GetCmd() == commonv1.CommandType_COMMAND_TYPE_HEARTBEAT {
 		return true, nil
 	}
@@ -164,11 +158,11 @@ func (h *EvtHandler) cacheMessage(bizId uint64, msg *messagev1.Message) (bool, e
 	return h.rdb.SetNX(ctx, h.cacheKey(bizId, msg.GetMessageId()), msg.GetMessageId(), h.cacheExpiration).Result()
 }
 
-func (h *EvtHandler) needUncacheMessage(err error) bool {
+func (h *Handler) needUncacheMessage(err error) bool {
 	return errors.Is(err, ErrUnknownMessageType) || errors.Is(err, ErrMaxRetryExceeded)
 }
 
-func (h *EvtHandler) uncacheMessage(bizId uint64, msg *messagev1.Message) error {
+func (h *Handler) uncacheMessage(bizId uint64, msg *messagev1.Message) error {
 	if msg.GetCmd() == commonv1.CommandType_COMMAND_TYPE_HEARTBEAT {
 		return nil
 	}
@@ -183,11 +177,11 @@ func (h *EvtHandler) uncacheMessage(bizId uint64, msg *messagev1.Message) error 
 	return nil
 }
 
-func (h *EvtHandler) cacheKey(bizId uint64, messageId string) string {
+func (h *Handler) cacheKey(bizId uint64, messageId string) string {
 	return fmt.Sprintf("%d:%s", bizId, messageId)
 }
 
-func (h *EvtHandler) OnReceiveFromBackend(conn synp.Conn, msg *messagev1.PushMessage) error {
+func (h *Handler) OnReceiveFromBackend(conn synp.Conn, msg *messagev1.PushMessage) error {
 	if msg.GetMessageId() == "" {
 		return fmt.Errorf("%w: empty message_id", ErrInvalidMessage)
 	}
@@ -201,7 +195,7 @@ func (h *EvtHandler) OnReceiveFromBackend(conn synp.Conn, msg *messagev1.PushMes
 	return h.dMsgHandler.Handle(conn, msg)
 }
 
-func NewEventHandler(
+func NewHandler(
 	rdb redis.Cmdable,
 	cacheRequestTimeout time.Duration,
 	cacheExpiration time.Duration,
@@ -209,13 +203,13 @@ func NewEventHandler(
 	uMsgHandlers []upstream.UMsgHandler,
 	dMsgHandler downstream.DMsgHandler,
 	logger *zap.Logger,
-) synp.ConnEventHandler {
+) synp.Handler {
 	m := make(map[commonv1.CommandType]upstream.UMsgHandler)
 	for _, handler := range uMsgHandlers {
 		m[handler.CmdType()] = handler
 	}
 
-	return &EvtHandler{
+	return &Handler{
 		rdb:                 rdb,
 		cacheRequestTimeout: cacheRequestTimeout,
 		cacheExpiration:     cacheExpiration,
