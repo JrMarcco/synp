@@ -18,7 +18,7 @@ type Config struct {
 	EnableLocalMode bool   // 是自动获取 IP 地
 }
 
-func DefaultWebSocketConfig() *Config {
+func DefaultConfig() *Config {
 	host := *flag.String("host", defaultHost, "WebSocket gateway host address")
 	port := *flag.Int("port", defaultPort, "WebSocket gateway port")
 

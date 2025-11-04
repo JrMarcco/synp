@@ -2,6 +2,7 @@ package limiter
 
 import (
 	"context"
+	"errors"
 	"sync/atomic"
 	"time"
 
@@ -13,6 +14,58 @@ type TokenLimiterConfig struct {
 	MaxCapacity      int64         `yaml:"max_capacity"`
 	IncreaseStep     int64         `yaml:"increase_step"`
 	IncreaseInterval time.Duration `yaml:"increase_interval"`
+}
+
+func DefaultConfig() TokenLimiterConfig {
+	// 默认配置。
+	//
+	// 从初始容量扩容到最大容量需要：
+	//  |-- 增量：50000 - 2000 = 48000
+	//  |--次数：48000 ÷ 500 = 96次
+	//  |--时间：96 × 2秒 = 192秒（约3.2分钟）
+	//
+	// 推荐设置：
+	//  |-- 小规模场景：InitCapacity: 500, MaxCapacity: 10000
+	//  |-- 大规模场景：InitCapacity: 5000, MaxCapacity: 100000
+	return TokenLimiterConfig{
+		InitCapacity:     2000,
+		MaxCapacity:      50000,
+		IncreaseStep:     500,
+		IncreaseInterval: 2 * time.Second,
+	}
+}
+
+func NewConfig(initCapacity int64, maxCapacity int64, increaseStep int64, increaseInterval time.Duration) (TokenLimiterConfig, error) {
+	var cfg TokenLimiterConfig
+
+	if initCapacity <= 0 {
+		return cfg, errors.New("init capacity must be greater than 0")
+	}
+
+	if maxCapacity <= 0 {
+		return cfg, errors.New("max capacity must be greater than 0")
+	}
+
+	if initCapacity > maxCapacity {
+		return cfg, errors.New("init capacity must be less than max capacity")
+	}
+
+	if increaseStep <= 0 {
+		return cfg, errors.New("increase step must be greater than 0")
+	}
+
+	if increaseInterval <= 0 {
+		return cfg, errors.New("increase interval must be greater than 0")
+	}
+
+	cfg = TokenLimiterConfig{
+		InitCapacity:     initCapacity,
+		MaxCapacity:      maxCapacity,
+		IncreaseStep:     increaseStep,
+		IncreaseInterval: increaseInterval,
+	}
+
+	return cfg, nil
 }
 
 // TokenLimiter 令牌桶算法限流器。
@@ -103,4 +156,30 @@ func (l *TokenLimiter) Close() error {
 
 func (l *TokenLimiter) Cap() int64 {
 	return l.currCapacity.Load()
+}
+
+func NewTokenLimiter(cfg TokenLimiterConfig, logger *zap.Logger) *TokenLimiter {
+	ctx, cancel := context.WithCancel(context.Background())
+	tl := &TokenLimiter{
+		cfg: cfg,
+
+		ctx:        ctx,
+		cancelFunc: cancel,
+
+		logger: logger,
+	}
+
+	// 初始令牌。
+	for i := int64(0); i < cfg.InitCapacity; i++ {
+		tl.tokens <- struct{}{}
+	}
+	tl.currCapacity.Store(cfg.InitCapacity)
+
+	tl.logger.Info(
+		"[token-limiter] successfully initialized",
+		zap.Int64("init_capacity", cfg.InitCapacity),
+		zap.Int64("max_capacity", cfg.MaxCapacity),
+	)
+
+	return tl
 }

@@ -6,8 +6,10 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"sync/atomic"
 	"time"
 
+	"github.com/JrMarcco/jit/bean/option"
 	"github.com/JrMarcco/synp"
 	messagev1 "github.com/JrMarcco/synp-api/api/go/message/v1"
 	"github.com/JrMarcco/synp/internal/pkg/limiter"
@@ -38,6 +40,8 @@ type Server struct {
 
 	connLimiter *limiter.TokenLimiter
 	backoff     *backoff.ExponentialBackOff
+
+	acceptNewConn atomic.Bool
 
 	ctx        context.Context
 	cancelFunc context.CancelFunc
@@ -99,7 +103,11 @@ func (s *Server) Start() error {
 // acceptConn 接收 WebSocket 连接。
 func (s *Server) acceptConn() {
 	for {
-		//TODO: 判断是否还接收新连接。
+		// 判断是否接收新连接。
+		if !s.acceptNewConn.Load() {
+			s.logger.Info("[synp-server] server is not accepting new connections")
+			return
+		}
 
 		// 接收连接前先获取令牌。
 		if !s.connLimiter.Acquire() {
@@ -315,4 +323,34 @@ func (s *Server) GracefulShutdown() error {
 	//TODO: 优雅关闭。
 	<-s.ctx.Done()
 	return s.Shutdown()
+}
+
+func NewServer(
+	config *Config,
+	upgrader synp.Upgrader,
+	connManager synp.ConnManager,
+	connEvtHandler synp.Handler,
+	logger *zap.Logger,
+	opts ...option.Opt[Server],
+) *Server {
+	ctx, cancel := context.WithCancel(context.Background())
+	s := &Server{
+		config: config,
+
+		upgrader:       upgrader,
+		connManager:    connManager,
+		connEvtHandler: connEvtHandler,
+
+		connLimiter: limiter.NewTokenLimiter(limiter.DefaultConfig(), logger), // 默认令牌桶限流器。
+		backoff:     backoff.NewExponentialBackOff(),                          // 默认退避策略。
+
+		ctx:        ctx,
+		cancelFunc: cancel,
+
+		logger: logger,
+	}
+	s.acceptNewConn.Store(true)
+
+	option.Apply(s, opts...)
+	return s
 }
