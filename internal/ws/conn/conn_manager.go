@@ -136,7 +136,7 @@ func (m *ConnManager) NewConn(ctx context.Context, netConn net.Conn, sess sessio
 		)
 
 		// 移除旧连接。
-		_ = m.RemoveConn(connKey, device)
+		_ = m.RemoveConn(user)
 	}
 
 	// 创建新连接
@@ -214,13 +214,15 @@ func (m *ConnManager) convertToConnOpts(user session.User, compressionState *com
 	return opts
 }
 
-func (m *ConnManager) RemoveConn(connKey string, device session.Device) bool {
+func (m *ConnManager) RemoveConn(user session.User) bool {
+	connKey := user.ConnKey()
+
 	dc, ok := m.conns.Load(connKey)
 	if !ok {
 		return false
 	}
 
-	conn, ok := dc.remove(device)
+	conn, ok := dc.remove(user.Device)
 	if ok {
 		defer func() {
 			// 关闭连接。
@@ -245,8 +247,8 @@ func (m *ConnManager) RemoveConn(connKey string, device session.Device) bool {
 	return ok
 }
 
-func (m *ConnManager) RemoveUserConn(connKey string) bool {
-	dc, ok := m.conns.Load(connKey)
+func (m *ConnManager) RemoveUserConn(user session.User) bool {
+	dc, ok := m.conns.Load(user.ConnKey())
 	if !ok {
 		return false
 	}
@@ -258,20 +260,21 @@ func (m *ConnManager) RemoveUserConn(connKey string) bool {
 	return true
 }
 
-func (m *ConnManager) FindConn(connKey string, device session.Device) (synp.Conn, bool) {
-	dc, ok := m.conns.Load(connKey)
+func (m *ConnManager) FindConn(user session.User) (synp.Conn, bool) {
+	dc, ok := m.conns.Load(user.ConnKey())
 	if !ok {
 		return nil, false
 	}
 
-	conn, ok := dc.find(device)
+	conn, ok := dc.find(user.Device)
 	if !ok {
 		return nil, false
 	}
 	return conn, true
 }
 
-func (m *ConnManager) FindUserConn(connKey string) ([]synp.Conn, bool) {
+func (m *ConnManager) FindUserConn(user session.User) ([]synp.Conn, bool) {
+	connKey := user.ConnKey()
 	dc, ok := m.conns.Load(connKey)
 	if !ok {
 		return nil, false

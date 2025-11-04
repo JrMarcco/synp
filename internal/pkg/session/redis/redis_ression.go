@@ -15,8 +15,9 @@ import (
 var sessionCreateLua string
 
 var (
-	ErrSessionExists = errors.New("session exists")
-	ErrSessionCreate = errors.New("failed to create session")
+	ErrSessionExists  = errors.New("session exists")
+	ErrSessionCreate  = errors.New("failed to create session")
+	ErrSessionDestroy = errors.New("failed to destroy session")
 )
 
 var _ session.Session = (*Session)(nil)
@@ -34,13 +35,29 @@ func (s *Session) User() session.User {
 }
 
 func (s *Session) Set(ctx context.Context, key string, val string) error {
-	//TODO: not implemented
-	panic("not implemented")
+	// HSet 的 value 参数可以是 any 类型， go-redis 会自动转换为 string。
+	// 注：
+	//  传入结构体的时，value 会被 go-redis 序列化成一种默认的字符串格式，反序列化时会出现问题。
+	//  最好自己序列化成 string 再传入。
+	return s.rdb.HSet(ctx, s.key, key, val).Err()
 }
 
 func (s *Session) Get(ctx context.Context, key string) (string, error) {
-	//TODO: not implemented
-	panic("not implemented")
+	str, err := s.rdb.HGet(ctx, s.key, key).Result()
+	if err != nil {
+		if errors.Is(err, redis.Nil) {
+			return "", nil
+		}
+		return "", err
+	}
+	return str, nil
+}
+
+func (s *Session) Destroy(ctx context.Context) error {
+	if err := s.rdb.Del(ctx, s.key).Err(); err != nil {
+		return fmt.Errorf("%w: %w", ErrSessionDestroy, err)
+	}
+	return nil
 }
 
 // saveToRedis 将 Session 保存到 redis 中。

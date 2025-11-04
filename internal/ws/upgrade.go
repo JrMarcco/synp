@@ -90,12 +90,12 @@ func (u *Upgrader) Upgrade(conn net.Conn) (session.Session, *compression.State, 
 
 			// 初始化 session。
 			sessionBuilder := sr.NewSessionBuilder(u.rdb)
-			createdSession, newSession, err := sessionBuilder.Build(context.Background(), user)
+			createdSession, isNew, err := sessionBuilder.Build(context.Background(), user)
 			if err != nil {
 				return nil, err
 			}
 
-			if !newSession {
+			if !isNew {
 				u.logger.Warn("[synp-upgrader] session already exists", zap.Any("user", user))
 			}
 

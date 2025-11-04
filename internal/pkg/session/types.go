@@ -12,6 +12,8 @@ type Session interface {
 
 	Set(ctx context.Context, key string, val string) error
 	Get(ctx context.Context, key string) (string, error)
+
+	Destroy(ctx context.Context) error
 }
 
 // Builder 为 Session 的构建器。

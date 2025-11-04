@@ -2,17 +2,28 @@ package ws
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"net"
 	"time"
 
 	"github.com/JrMarcco/synp"
+	messagev1 "github.com/JrMarcco/synp-api/api/go/message/v1"
 	"github.com/JrMarcco/synp/internal/pkg/limiter"
-	"github.com/JrMarcco/synp/internal/pkg/xmq/consumer"
+	"github.com/JrMarcco/synp/internal/pkg/session"
+	"github.com/JrMarcco/synp/internal/pkg/xmq"
 	wsc "github.com/JrMarcco/synp/internal/ws/conn"
+	"github.com/JrMarcco/synp/internal/ws/gateway"
 	"github.com/cenkalti/backoff/v5"
 	"go.uber.org/zap"
 )
+
+var (
+	ErrUnknownReceiver = errors.New("unknown receiver")
+)
+
+var _ synp.Server = (*Server)(nil)
 
 type Server struct {
 	config *Config
@@ -23,7 +34,7 @@ type Server struct {
 	connManager    synp.ConnManager
 	connEvtHandler synp.Handler
 
-	consumers map[string]consumer.Consumer
+	consumers map[string]gateway.Consumer
 
 	connLimiter *limiter.TokenLimiter
 	backoff     *backoff.ExponentialBackOff
@@ -46,6 +57,38 @@ func (s *Server) Start() error {
 	s.listener = ln
 
 	go s.acceptConn()
+
+	// 初始化网关业务消息消费者。
+	for key := range s.consumers {
+		switch key {
+		case gateway.EventPushMessage:
+			consumer, ok := s.consumers[key]
+			if !ok {
+				s.logger.Warn("[synp-server] consumer not found", zap.String("event", key))
+				continue
+			}
+			if err := consumer.Start(s.ctx, s.consumePushMessage); err != nil {
+				s.logger.Error(
+					"[synp-server] failed to start push message consumer",
+					zap.Error(err),
+				)
+				return err
+			}
+		case gateway.EventScaleUp:
+			consumer, ok := s.consumers[key]
+			if !ok {
+				s.logger.Warn("[synp-server] consumer not found", zap.String("event", key))
+				continue
+			}
+			if err := consumer.Start(s.ctx, s.consumeScaleUp); err != nil {
+				s.logger.Error(
+					"[synp-server] failed to start scale up consumer",
+					zap.Error(err),
+				)
+				return err
+			}
+		}
+	}
 
 	// 阻塞并等待关闭。
 	<-s.ctx.Done()
@@ -144,7 +187,7 @@ func (s *Server) handleConn(conn net.Conn) {
 
 	user := synpConn.Session().User()
 	defer func() {
-		s.connManager.RemoveConn(user.ConnKey(), user.Device)
+		s.connManager.RemoveConn(user)
 		if err := synpConn.Close(); err != nil {
 			s.logger.Error(
 				"[synp-server] failed to close synp connection",
@@ -203,6 +246,58 @@ func (s *Server) handleConn(conn net.Conn) {
 			return
 		}
 	}
+}
+
+// consumePushMessage 消费 push message 事件。
+func (s *Server) consumePushMessage(_ context.Context, msg *xmq.Message) error {
+	pushMsg := &messagev1.PushMessage{}
+	// 这里是 unmarshal 后端 ( 业务服务端 ) 推送到消息队列的消息。
+	// 所以直接使用 json 进行解码即可。
+	if err := json.Unmarshal(msg.Val, pushMsg); err != nil {
+		s.logger.Error(
+			"[synp-server] failed to unmarshal push message",
+			zap.String("message", string(msg.Val)),
+			zap.Error(err),
+		)
+		return err
+	}
+
+	conns, err := s.findConn(pushMsg)
+	if err != nil {
+		s.logger.Error(
+			"[synp-server] failed to find connection for user",
+			zap.String("message", string(msg.Val)),
+			zap.Error(err),
+		)
+		return err
+	}
+
+	if err = s.connEvtHandler.OnReceiveFromBackend(conns, pushMsg); err != nil {
+		s.logger.Error(
+			"[synp-server] failed to handle on receive from backend event",
+			zap.String("message", string(msg.Val)),
+			zap.Error(err),
+		)
+		return err
+	}
+	return nil
+}
+
+func (s *Server) findConn(pushMsg *messagev1.PushMessage) ([]synp.Conn, error) {
+	conns, ok := s.connManager.FindUserConn(session.User{
+		Bid: pushMsg.GetBizId(),
+		Uid: pushMsg.GetReceiverId(),
+	})
+	if !ok {
+		return nil, fmt.Errorf("%w: user_id=%d, biz_id=%d", ErrUnknownReceiver, pushMsg.GetReceiverId(), pushMsg.GetBizId())
+	}
+	return conns, nil
+}
+
+// consumeScaleUp 消费 scale up 事件。
+func (s *Server) consumeScaleUp(_ context.Context, msg *xmq.Message) error {
+	// TODO: not implemented
+	panic("not implemented")
 }
 
 func (s *Server) Shutdown() error {

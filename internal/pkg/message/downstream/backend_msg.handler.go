@@ -18,7 +18,7 @@ type BackendMsgHandler struct {
 	logger            *zap.Logger
 }
 
-func (h *BackendMsgHandler) Handle(conn synp.Conn, pushMsg *messagev1.PushMessage) error {
+func (h *BackendMsgHandler) Handle(conns []synp.Conn, pushMsg *messagev1.PushMessage) error {
 	downstreamMsg := &messagev1.Message{
 		Cmd:       commonv1.CommandType_COMMAND_TYPE_DOWNSTREAM,
 		MessageId: pushMsg.GetMessageId(),
@@ -27,14 +27,16 @@ func (h *BackendMsgHandler) Handle(conn synp.Conn, pushMsg *messagev1.PushMessag
 
 	// 设置重试。
 	// 当前端返回 ack 消息后，停止重试。
-	defer h.retransmitManager.Start(conn, downstreamMsg)
+	defer h.retransmitManager.Start(conns, downstreamMsg)
 
-	if err := h.pushFunc(conn, downstreamMsg); err != nil {
-		return err
+	for _, conn := range conns {
+		if err := h.pushFunc(conn, downstreamMsg); err != nil {
+			return err
+		}
+
+		// 成功发送消息到前端，更新连接活跃时间。
+		conn.UpdateActivityTime()
 	}
-
-	// 成功发送消息到前端，更新连接活跃时间。
-	conn.UpdateActivityTime()
 	return nil
 }
 

@@ -43,11 +43,11 @@ type Conn interface {
 type ConnManager interface {
 	NewConn(ctx context.Context, netConn net.Conn, sess session.Session, compressionState *compression.State) (Conn, error)
 
-	RemoveConn(connKey string, device session.Device) bool
-	RemoveUserConn(connKey string) bool
+	RemoveConn(user session.User) bool
+	RemoveUserConn(user session.User) bool
 
-	FindConn(connKey string, device session.Device) (Conn, bool)
-	FindUserConn(connKey string) ([]Conn, bool)
+	FindConn(user session.User) (Conn, bool)
+	FindUserConn(user session.User) ([]Conn, bool)
 }
 
 // Handler 是连接生命周期相关事件的回调接口。
@@ -59,7 +59,7 @@ type Handler interface {
 	OnReceiveFromFrontend(conn Conn, payload []byte) error
 
 	// OnReceiveFromBackend 收到前端（业务客户端）消息的回调，通常用于发送消息到后端。
-	OnReceiveFromBackend(conn Conn, pushMsg *messagev1.PushMessage) error
+	OnReceiveFromBackend(conns []Conn, pushMsg *messagev1.PushMessage) error
 }
 
 // HandlerWrapper 是 Handler 的包装器，用于组合多个 Handler。
@@ -98,10 +98,10 @@ func (w *HandlerWrapper) OnReceiveFromFrontend(conn Conn, payload []byte) error 
 	return err
 }
 
-func (w *HandlerWrapper) OnReceiveFromBackend(conn Conn, pushMsg *messagev1.PushMessage) error {
+func (w *HandlerWrapper) OnReceiveFromBackend(conns []Conn, pushMsg *messagev1.PushMessage) error {
 	var err error
 	for _, handler := range w.handlers {
-		err = multierr.Append(err, handler.OnReceiveFromBackend(conn, pushMsg))
+		err = multierr.Append(err, handler.OnReceiveFromBackend(conns, pushMsg))
 	}
 	return err
 }

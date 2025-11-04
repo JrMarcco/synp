@@ -181,7 +181,7 @@ func (h *Handler) cacheKey(bizId uint64, messageId string) string {
 	return fmt.Sprintf("%d:%s", bizId, messageId)
 }
 
-func (h *Handler) OnReceiveFromBackend(conn synp.Conn, msg *messagev1.PushMessage) error {
+func (h *Handler) OnReceiveFromBackend(conns []synp.Conn, msg *messagev1.PushMessage) error {
 	if msg.GetMessageId() == "" {
 		return fmt.Errorf("%w: empty message_id", ErrInvalidMessage)
 	}
@@ -192,7 +192,7 @@ func (h *Handler) OnReceiveFromBackend(conn synp.Conn, msg *messagev1.PushMessag
 		return fmt.Errorf("%w: empty receiver_id", ErrInvalidMessage)
 	}
 
-	return h.dMsgHandler.Handle(conn, msg)
+	return h.dMsgHandler.Handle(conns, msg)
 }
 
 func NewHandler(
