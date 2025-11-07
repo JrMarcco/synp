@@ -43,11 +43,14 @@ func main() {
 
 		// 初始化 message handler。
 		ioc.MessageHandlerFxOpt,
+
+		// 初始化 app。
+		ioc.AppFxOpt,
 	).Run()
 }
 
 func initViper() {
-	configFile := pflag.String("config", "config.yaml", "path to config file")
+	configFile := pflag.String("config", "etc/config.yaml", "path to config file")
 	pflag.Parse()
 
 	viper.SetConfigFile(*configFile)

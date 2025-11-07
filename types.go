@@ -17,7 +17,11 @@ var (
 
 //go:generate mockgen -source=./types.go -destination=./mock/synp.mock.go -package=synpmock -typed
 
-type Server interface{}
+type Server interface {
+	Start() error
+	Shutdown() error
+	GracefulShutdown() error
+}
 
 // Upgrader 是连接升级器，用于将 HTTP 连接升级为 WebSocket 连接。
 type Upgrader interface {

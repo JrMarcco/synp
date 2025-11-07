@@ -5,12 +5,6 @@ import (
 	"github.com/JrMarcco/synp/internal/pkg/limiter"
 )
 
-func SvrWithNetwork(network string) option.Opt[Server] {
-	return func(s *Server) {
-		s.config.Network = network
-	}
-}
-
 func SvrWithConnLimiter(connLimiter *limiter.TokenLimiter) option.Opt[Server] {
 	return func(s *Server) {
 		s.connLimiter = connLimiter

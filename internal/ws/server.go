@@ -32,9 +32,9 @@ type Server struct {
 
 	listener net.Listener
 
-	upgrader       synp.Upgrader
-	connManager    synp.ConnManager
-	connEvtHandler synp.Handler
+	upgrader    synp.Upgrader
+	connManager synp.ConnManager
+	connHandler synp.Handler
 
 	consumers map[string]gateway.Consumer
 
@@ -206,7 +206,7 @@ func (s *Server) handleConn(conn net.Conn) {
 	}()
 
 	// 处理 on connect & on disconnect 事件。
-	if err := s.connEvtHandler.OnConnect(synpConn); err != nil {
+	if err := s.connHandler.OnConnect(synpConn); err != nil {
 		s.logger.Error(
 			"[synp-server] failed to handle on connect lifecycle event",
 			zap.String("conn_id", synpConn.Id()),
@@ -218,7 +218,7 @@ func (s *Server) handleConn(conn net.Conn) {
 		return
 	}
 	defer func() {
-		if err := s.connEvtHandler.OnDisconnect(synpConn); err != nil {
+		if err := s.connHandler.OnDisconnect(synpConn); err != nil {
 			s.logger.Error(
 				"[synp-server] failed to handle on disconnect lifecycle event",
 				zap.String("conn_id", synpConn.Id()),
@@ -234,7 +234,7 @@ func (s *Server) handleConn(conn net.Conn) {
 			if !ok {
 				return
 			}
-			if err := s.connEvtHandler.OnReceiveFromFrontend(synpConn, message); err != nil {
+			if err := s.connHandler.OnReceiveFromFrontend(synpConn, message); err != nil {
 				// 处理前端（业务客户端）发送的消息失败。
 				s.logger.Error(
 					"[synp-server] failed to handle on receive from frontend event",
@@ -280,7 +280,7 @@ func (s *Server) consumePushMessage(_ context.Context, msg *xmq.Message) error {
 		return err
 	}
 
-	if err = s.connEvtHandler.OnReceiveFromBackend(conns, pushMsg); err != nil {
+	if err = s.connHandler.OnReceiveFromBackend(conns, pushMsg); err != nil {
 		s.logger.Error(
 			"[synp-server] failed to handle on receive from backend event",
 			zap.String("message", string(msg.Val)),
@@ -329,7 +329,7 @@ func NewServer(
 	config *Config,
 	upgrader synp.Upgrader,
 	connManager synp.ConnManager,
-	connEvtHandler synp.Handler,
+	connHandler synp.Handler,
 	logger *zap.Logger,
 	opts ...option.Opt[Server],
 ) *Server {
@@ -337,9 +337,9 @@ func NewServer(
 	s := &Server{
 		config: config,
 
-		upgrader:       upgrader,
-		connManager:    connManager,
-		connEvtHandler: connEvtHandler,
+		upgrader:    upgrader,
+		connManager: connManager,
+		connHandler: connHandler,
 
 		connLimiter: limiter.NewTokenLimiter(limiter.DefaultConfig(), logger), // 默认令牌桶限流器。
 		backoff:     backoff.NewExponentialBackOff(),                          // 默认退避策略。
