@@ -320,7 +320,16 @@ func (s *Server) Shutdown() error {
 }
 
 func (s *Server) GracefulShutdown() error {
+	s.acceptNewConn.Store(false)
+
+	if s.listener != nil {
+		if err := s.listener.Close(); err != nil {
+			s.logger.Warn("[synp-server] failed to close net listener", zap.Error(err))
+		}
+	}
+
 	//TODO: 优雅关闭。
+
 	<-s.ctx.Done()
 	return s.Shutdown()
 }
