@@ -26,9 +26,9 @@ func (app *App) Stop() error {
 type appFxParams struct {
 	fx.In
 
-	upgrader    synp.Upgrader
-	connManager synp.ConnManager
-	connHandler synp.Handler
+	Upgrader    synp.Upgrader
+	ConnManager synp.ConnManager
+	ConnHandler synp.Handler
 
 	Logger    *zap.Logger
 	Lifecycle fx.Lifecycle
@@ -37,7 +37,7 @@ type appFxParams struct {
 func InitApp(params appFxParams) *App {
 	wsCfg := ws.DefaultConfig()
 	wsSvr := ws.NewServer(
-		wsCfg, params.upgrader, params.connManager, params.connHandler, params.Logger,
+		wsCfg, params.Upgrader, params.ConnManager, params.ConnHandler, params.Logger,
 	)
 
 	app := &App{

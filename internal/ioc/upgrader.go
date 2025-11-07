@@ -1,0 +1,47 @@
+package ioc
+
+import (
+	"github.com/JrMarcco/synp"
+	"github.com/JrMarcco/synp/internal/pkg/auth"
+	"github.com/JrMarcco/synp/internal/pkg/compression"
+	"github.com/JrMarcco/synp/internal/ws"
+	"github.com/redis/go-redis/v9"
+	"github.com/spf13/viper"
+	"go.uber.org/fx"
+	"go.uber.org/zap"
+)
+
+var UpgraderFxOpt = fx.Module("upgrader", fx.Provide(InitUpgrader))
+
+type upgraderFxParams struct {
+	fx.In
+
+	Redis     redis.Cmdable
+	Validator auth.Validator
+	Logger    *zap.Logger
+}
+
+func InitUpgrader(params upgraderFxParams) synp.Upgrader {
+	type config struct {
+		Enabled                 bool `mapstructure:"enabled"`
+		ServerMaxWindowBits     int  `mapstructure:"server_max_window_bits"`
+		ServerNoContextTakeover bool `mapstructure:"server_no_context_takeover"`
+		ClientMaxWindowBits     int  `mapstructure:"client_max_window_bits"`
+		ClientNoContextTakeover bool `mapstructure:"client_no_context_takeover"`
+		Level                   int  `mapstructure:"level"`
+	}
+
+	cfg := config{}
+	if err := viper.UnmarshalKey("synp.upgrader", &cfg); err != nil {
+		panic(err)
+	}
+
+	return ws.NewUpgrader(params.Redis, params.Validator, compression.Config{
+		Enabled:                 cfg.Enabled,
+		ServerMaxWindowBits:     cfg.ServerMaxWindowBits,
+		ServerNoContextTakeover: cfg.ServerNoContextTakeover,
+		ClientMaxWindowBits:     cfg.ClientMaxWindowBits,
+		ClientNoContextTakeover: cfg.ClientNoContextTakeover,
+		Level:                   cfg.Level,
+	}, params.Logger)
+}

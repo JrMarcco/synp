@@ -35,6 +35,9 @@ func main() {
 		// 初始化 token validator。
 		ioc.ValidatorFxOpt,
 
+		// 初始化 upgrader。
+		ioc.UpgraderFxOpt,
+
 		// 初始化 message push func。
 		ioc.MessagePushFxOpt,
 

@@ -193,3 +193,12 @@ func (u *Upgrader) extractUserInfo(uri []byte) (session.User, error) {
 
 	return user, nil
 }
+
+func NewUpgrader(rdb redis.Cmdable, validator auth.Validator, compressionConfig compression.Config, logger *zap.Logger) *Upgrader {
+	return &Upgrader{
+		rdb:               rdb,
+		validator:         validator,
+		compressionConfig: compressionConfig,
+		logger:            logger,
+	}
+}
