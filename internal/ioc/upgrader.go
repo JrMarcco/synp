@@ -32,7 +32,7 @@ func InitUpgrader(params upgraderFxParams) synp.Upgrader {
 	}
 
 	cfg := config{}
-	if err := viper.UnmarshalKey("synp.upgrader", &cfg); err != nil {
+	if err := viper.UnmarshalKey("synp.websocket.compression", &cfg); err != nil {
 		panic(err)
 	}
 
