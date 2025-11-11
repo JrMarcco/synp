@@ -1,0 +1,9 @@
+#!/bin/sh
+
+printf "🔧 running pre-commit hooks ...\n"
+if [ -n "$(make check)" ]; then
+    echo >&2 "🚨 [error] some files are changed, please add them to the staging area and commit again"
+    exit 1
+fi
+
+exit 0
