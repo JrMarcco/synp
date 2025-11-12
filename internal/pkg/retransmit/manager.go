@@ -43,7 +43,7 @@ func (t *Task) run() {
 	if t.retransmitCnt.Load() >= t.manager.maxRetryCnt {
 		t.manager.logger.Warn(
 			"[synp-retransmit-manager] retransmit task reach max retry cnt",
-			zap.String("conn_id", t.conn.Id()),
+			zap.String("conn_id", t.conn.ID()),
 			zap.String("message_id", t.msg.MessageId),
 			zap.Int32("retransmit_count", t.retransmitCnt.Load()),
 		)
@@ -56,7 +56,7 @@ func (t *Task) run() {
 	if err != nil {
 		t.manager.logger.Error(
 			"[synp-retransmit-manager] failed to retransmit message",
-			zap.String("conn_id", t.conn.Id()),
+			zap.String("conn_id", t.conn.ID()),
 			zap.String("message_id", t.msg.MessageId),
 			zap.Int32("retransmit_count", t.retransmitCnt.Load()),
 			zap.Error(err),
@@ -70,7 +70,7 @@ func (t *Task) run() {
 	t.conn.UpdateActivityTime()
 	t.manager.logger.Debug(
 		"[synp-retransmit-manager] successfully retransmit message",
-		zap.String("conn_id", t.conn.Id()),
+		zap.String("conn_id", t.conn.ID()),
 		zap.String("message_id", t.msg.MessageId),
 		zap.Int32("retransmit_count", t.retransmitCnt.Load()),
 	)
@@ -120,7 +120,7 @@ func (m *Manager) start(conn synp.Conn, msg *messagev1.Message) {
 	}
 
 	task := &Task{
-		key:     m.taskKey(conn.Id(), msg.MessageId),
+		key:     m.taskKey(conn.ID(), msg.MessageId),
 		conn:    conn,
 		msg:     msg,
 		manager: m,
@@ -135,7 +135,7 @@ func (m *Manager) start(conn synp.Conn, msg *messagev1.Message) {
 
 	m.logger.Debug(
 		"[synp-retransmit-manager] successfully start retransmit task",
-		zap.String("conn_id", conn.Id()),
+		zap.String("conn_id", conn.ID()),
 		zap.String("message_id", msg.MessageId),
 		zap.Duration("retry_interval", m.retryInterval),
 		zap.Int32("max_retry_cnt", m.maxRetryCnt),
@@ -143,22 +143,22 @@ func (m *Manager) start(conn synp.Conn, msg *messagev1.Message) {
 }
 
 // Stop 停止指定消息的重传任务。
-func (m *Manager) Stop(connId string, messageId string) {
-	key := m.taskKey(connId, messageId)
+func (m *Manager) Stop(connID, messageID string) {
+	key := m.taskKey(connID, messageID)
 	if task, ok := m.tasks.Load(key); ok {
 		_ = m.stopAndDelete(key)
 
 		m.logger.Debug(
 			"[synp-retransmit-manager] successfully stop retransmit task",
-			zap.String("conn_id", connId),
-			zap.String("message_id", messageId),
+			zap.String("conn_id", connID),
+			zap.String("message_id", messageID),
 			zap.Int32("retransmit_count", task.retransmitCnt.Load()),
 		)
 	}
 }
 
-func (m *Manager) taskKey(connId string, messageId string) string {
-	return fmt.Sprintf("%s:%s", connId, messageId)
+func (m *Manager) taskKey(connID, messageID string) string {
+	return fmt.Sprintf("%s:%s", connID, messageID)
 }
 
 func (m *Manager) TotalTaskCnt() int64 {
@@ -166,10 +166,10 @@ func (m *Manager) TotalTaskCnt() int64 {
 }
 
 // ClearByConn 清除指定连接的重传任务。
-func (m *Manager) ClearByConn(connId string) {
+func (m *Manager) ClearByConn(connID string) {
 	var cnt int
 	m.tasks.Range(func(key string, task *Task) bool {
-		if task.conn.Id() == connId {
+		if task.conn.ID() == connID {
 			if m.stopAndDelete(key) {
 				cnt++
 			}
@@ -180,7 +180,7 @@ func (m *Manager) ClearByConn(connId string) {
 	if cnt > 0 {
 		m.logger.Info(
 			"[synp-retransmit-manager] successfully clear retransmit tasks by connection",
-			zap.String("conn_id", connId),
+			zap.String("conn_id", connID),
 			zap.Int("task_cleared_cnt", cnt),
 		)
 	}
@@ -224,7 +224,7 @@ func NewManager(retryInterval time.Duration, maxRetryCnt int32, taskFunc message
 	}
 
 	if taskFunc == nil {
-		taskFunc = func(conn synp.Conn, msg *messagev1.Message) error {
+		taskFunc = func(_ synp.Conn, _ *messagev1.Message) error {
 			return nil
 		}
 	}

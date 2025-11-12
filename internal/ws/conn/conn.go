@@ -69,7 +69,7 @@ type Conn struct {
 	logger *zap.Logger
 }
 
-func (c *Conn) Id() string {
+func (c *Conn) ID() string {
 	return c.id
 }
 
@@ -109,7 +109,7 @@ func (c *Conn) Closed() <-chan struct{} {
 func (c *Conn) Close() error {
 	var err error
 	c.closeOnce.Do(func() {
-		//TODO: not implemented
+		// TODO: not implemented
 		panic("not implemented")
 	})
 	return err

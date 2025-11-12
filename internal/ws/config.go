@@ -19,8 +19,11 @@ type Config struct {
 }
 
 func DefaultConfig() *Config {
-	host := *flag.String("host", defaultHost, "WebSocket gateway host address")
-	port := *flag.Int("port", defaultPort, "WebSocket gateway port")
+	var host string
+	var port int
+
+	flag.StringVar(&host, "host", defaultHost, "WebSocket gateway host address")
+	flag.IntVar(&port, "port", defaultPort, "WebSocket gateway port")
 
 	return &Config{
 		Host:    host,

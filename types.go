@@ -11,9 +11,7 @@ import (
 	"go.uber.org/multierr"
 )
 
-var (
-	ErrRateLimited = errors.New("request too frequently, please try again later")
-)
+var ErrRateLimited = errors.New("request too frequently, please try again later")
 
 //go:generate mockgen -source=./types.go -destination=./mock/synp.mock.go -package=synpmock -typed
 
@@ -31,7 +29,7 @@ type Upgrader interface {
 
 // Conn 是用户连接的抽象，封装了底层的网络连接 ( 如 WebSocket、TCP 连接 ) 。
 type Conn interface {
-	Id() string
+	ID() string
 	Session() session.Session
 
 	Send(payload []byte) error

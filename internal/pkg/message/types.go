@@ -9,9 +9,7 @@ import (
 	"go.uber.org/zap"
 )
 
-var (
-	ErrMarshalMessage = errors.New("failed to marshal message")
-)
+var ErrMarshalMessage = errors.New("failed to marshal message")
 
 type PushFunc func(conn synp.Conn, msg *messagev1.Message) error
 
@@ -40,7 +38,7 @@ func DefaultPushFunc(codec codec.Codec, logger *zap.Logger) PushFunc {
 		if err = conn.Send(payload); err != nil {
 			logger.Error(
 				"[synp] failed to send message",
-				zap.String("connection_id", conn.Id()),
+				zap.String("connection_id", conn.ID()),
 				zap.Error(err),
 			)
 			return err

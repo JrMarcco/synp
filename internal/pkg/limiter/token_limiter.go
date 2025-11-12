@@ -10,10 +10,10 @@ import (
 )
 
 type TokenLimiterConfig struct {
-	InitCapacity     int64         `yaml:"init_capacity"`
-	MaxCapacity      int64         `yaml:"max_capacity"`
-	IncreaseStep     int64         `yaml:"increase_step"`
-	IncreaseInterval time.Duration `yaml:"increase_interval"`
+	InitCapacity     int64
+	MaxCapacity      int64
+	IncreaseStep     int64
+	IncreaseInterval time.Duration
 }
 
 func DefaultConfig() TokenLimiterConfig {
@@ -27,15 +27,21 @@ func DefaultConfig() TokenLimiterConfig {
 	// 推荐设置：
 	//  |-- 小规模场景：InitCapacity: 500, MaxCapacity: 10000
 	//  |-- 大规模场景：InitCapacity: 5000, MaxCapacity: 100000
+	const (
+		defaultInitCapacity     = int64(2000)
+		defaultMaxCapacity      = int64(50000)
+		defaultIncreaseStep     = int64(500)
+		defaultIncreaseInterval = 2 * time.Second
+	)
 	return TokenLimiterConfig{
-		InitCapacity:     2000,
-		MaxCapacity:      50000,
-		IncreaseStep:     500,
-		IncreaseInterval: 2 * time.Second,
+		InitCapacity:     defaultInitCapacity,
+		MaxCapacity:      defaultMaxCapacity,
+		IncreaseStep:     defaultIncreaseStep,
+		IncreaseInterval: defaultIncreaseInterval,
 	}
 }
 
-func NewConfig(initCapacity int64, maxCapacity int64, increaseStep int64, increaseInterval time.Duration) (TokenLimiterConfig, error) {
+func NewConfig(initCapacity, maxCapacity, increaseStep int64, increaseInterval time.Duration) (TokenLimiterConfig, error) {
 	var cfg TokenLimiterConfig
 
 	if initCapacity <= 0 {

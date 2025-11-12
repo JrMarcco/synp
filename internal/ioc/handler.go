@@ -47,5 +47,4 @@ func InitConnLifecycleHandler(params connLifecycleHandlerFxParams) synp.Handler 
 		params.DMsgHandler,
 		params.Logger,
 	)
-
 }

@@ -22,7 +22,7 @@ import (
 
 var (
 	ErrTokenRequired = errors.New("token is required")
-	ErrInvalidUri    = errors.New("invalid uri")
+	ErrInvalidURI    = errors.New("invalid uri")
 	ErrInvalidToken  = errors.New("invalid token")
 )
 
@@ -136,7 +136,7 @@ func (u *Upgrader) Upgrade(conn net.Conn) (session.Session, *compression.State, 
 func (u *Upgrader) extractToken(uri []byte) (string, error) {
 	parsedURL, err := url.Parse(string(uri))
 	if err != nil {
-		return "", ErrInvalidUri
+		return "", ErrInvalidURI
 	}
 
 	token := parsedURL.Query().Get("token")

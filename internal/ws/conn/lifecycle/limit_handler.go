@@ -1,4 +1,3 @@
 package lifecycle
 
-type LimitHandler struct {
-}
+type LimitHandler struct{}

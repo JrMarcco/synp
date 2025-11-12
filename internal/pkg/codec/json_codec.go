@@ -7,15 +7,15 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-var _ Codec = (*JsonCodec)(nil)
+var _ Codec = (*JSONCodec)(nil)
 
-type JsonCodec struct{}
+type JSONCodec struct{}
 
-func (c *JsonCodec) Name() string {
+func (c *JSONCodec) Name() string {
 	return "json"
 }
 
-func (c *JsonCodec) Marshal(val any) ([]byte, error) {
+func (c *JSONCodec) Marshal(val any) ([]byte, error) {
 	protoMsg, ok := val.(proto.Message)
 	if !ok {
 		return nil, fmt.Errorf("failed to marshal message: invalid message type, expected proto.Message, got %T", val)
@@ -23,7 +23,7 @@ func (c *JsonCodec) Marshal(val any) ([]byte, error) {
 	return protojson.Marshal(protoMsg)
 }
 
-func (c *JsonCodec) Unmarshal(data []byte, val any) error {
+func (c *JSONCodec) Unmarshal(data []byte, val any) error {
 	protoMsg, ok := val.(proto.Message)
 	if !ok {
 		return fmt.Errorf("failed to unmarshal message: invalid message type, expected proto.Message, got %T", val)
@@ -31,6 +31,6 @@ func (c *JsonCodec) Unmarshal(data []byte, val any) error {
 	return protojson.Unmarshal(data, protoMsg)
 }
 
-func NewJsonCodec() *JsonCodec {
-	return &JsonCodec{}
+func NewJSONCodec() *JSONCodec {
+	return &JSONCodec{}
 }

@@ -20,7 +20,6 @@ func (p *KafkaProducer) Produce(ctx context.Context, msg *xmq.Message) error {
 		Key:   msg.Key,
 		Value: msg.Val,
 	})
-
 	if err != nil {
 		return err
 	}

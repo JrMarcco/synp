@@ -4,12 +4,12 @@ import "github.com/gobwas/ws/wsflate"
 
 // Config 为压缩配置。
 type Config struct {
-	Enabled                 bool `yaml:"enabled"`
-	ServerMaxWindowBits     int  `yaml:"server_max_window_bits"`
-	ServerNoContextTakeover bool `yaml:"server_no_context_takeover"`
-	ClientMaxWindowBits     int  `yaml:"client_max_window_bits"`
-	ClientNoContextTakeover bool `yaml:"client_no_context_takeover"`
-	Level                   int  `yaml:"level"`
+	Enabled                 bool
+	ServerMaxWindowBits     int
+	ServerNoContextTakeover bool
+	ClientMaxWindowBits     int
+	ClientNoContextTakeover bool
+	Level                   int
 }
 
 // ToParamters 将 Config 转换为 wsflate 参数。

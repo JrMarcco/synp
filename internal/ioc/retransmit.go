@@ -41,7 +41,7 @@ func InitRetransmitManager(params retransmitManagerFxParams) *retransmit.Manager
 	)
 
 	params.Lifecycle.Append(fx.Hook{
-		OnStop: func(ctx context.Context) error {
+		OnStop: func(_ context.Context) error {
 			manager.Close()
 			params.Logger.Info("[synp-ioc] retransmit manager closed")
 			return nil

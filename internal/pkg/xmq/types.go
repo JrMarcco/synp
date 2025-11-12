@@ -2,9 +2,7 @@ package xmq
 
 import "errors"
 
-var (
-	ErrConsumerClosed = errors.New("consumer closed")
-)
+var ErrConsumerClosed = errors.New("consumer closed")
 
 type Headers map[string]string
 

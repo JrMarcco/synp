@@ -17,11 +17,11 @@ type DownstreamAckHandler struct {
 
 func (h *DownstreamAckHandler) Handle(conn synp.Conn, msg *messagev1.Message) error {
 	// 停止向前端推送 downstream 消息的重试。
-	h.retransmitManager.Stop(conn.Id(), msg.MessageId)
+	h.retransmitManager.Stop(conn.ID(), msg.MessageId)
 
 	h.logger.Debug(
 		"[synp-downstream-ack-handler] received downstream ack message",
-		zap.String("conn_id", conn.Id()),
+		zap.String("conn_id", conn.ID()),
 		zap.String("message_id", msg.MessageId),
 	)
 	return nil

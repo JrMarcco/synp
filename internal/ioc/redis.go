@@ -44,7 +44,7 @@ func InitRedis(params redisFxParams) redis.Cmdable {
 			}
 			return nil
 		},
-		OnStop: func(ctx context.Context) error {
+		OnStop: func(_ context.Context) error {
 			// 关闭 redis 连接。
 			if err := rdb.Close(); err != nil {
 				params.Logger.Error("[synp-ioc] failed to close redis", zap.Error(err))

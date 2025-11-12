@@ -34,7 +34,7 @@ func (s *Session) User() session.User {
 	return s.user
 }
 
-func (s *Session) Set(ctx context.Context, key string, val string) error {
+func (s *Session) Set(ctx context.Context, key, val string) error {
 	// HSet 的 value 参数可以是 any 类型， go-redis 会自动转换为 string。
 	// 注：
 	//  传入结构体的时，value 会被 go-redis 序列化成一种默认的字符串格式，反序列化时会出现问题。

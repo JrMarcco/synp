@@ -45,7 +45,7 @@ type Handler struct {
 func (h *Handler) OnConnect(conn synp.Conn) error {
 	h.logger.Debug(
 		"[synp-conn-lifecycle-handler] connection connected",
-		zap.String("conn_id", conn.Id()),
+		zap.String("conn_id", conn.ID()),
 	)
 	return nil
 }
@@ -53,7 +53,7 @@ func (h *Handler) OnConnect(conn synp.Conn) error {
 func (h *Handler) OnDisconnect(conn synp.Conn) error {
 	h.logger.Debug(
 		"[synp-conn-lifecycle-handler] connection disconnected",
-		zap.String("conn_id", conn.Id()),
+		zap.String("conn_id", conn.ID()),
 	)
 	return conn.Close()
 }
@@ -64,7 +64,7 @@ func (h *Handler) OnReceiveFromFrontend(conn synp.Conn, payload []byte) error {
 	if err != nil {
 		h.logger.Error(
 			"[synp-conn-lifecycle-handler] failed to decode payload",
-			zap.String("conn_id", conn.Id()),
+			zap.String("conn_id", conn.ID()),
 			zap.Any("user", conn.Session().User()),
 			zap.Error(err),
 		)
@@ -73,11 +73,11 @@ func (h *Handler) OnReceiveFromFrontend(conn synp.Conn, payload []byte) error {
 
 	// 消息去重（幂等）。
 	user := conn.Session().User()
-	ok, err := h.cacheMessage(user.Bid, msg)
+	ok, err := h.cacheMessage(user.BID, msg)
 	if err != nil {
 		h.logger.Error(
 			"[synp-conn-lifecycle-handler] failed to cache message",
-			zap.String("conn_id", conn.Id()),
+			zap.String("conn_id", conn.ID()),
 			zap.Any("user", conn.Session().User()),
 			zap.Error(err),
 		)
@@ -87,7 +87,7 @@ func (h *Handler) OnReceiveFromFrontend(conn synp.Conn, payload []byte) error {
 	if !ok {
 		h.logger.Warn(
 			"[synp-conn-lifecycle-handler] message duplicated, ignore it",
-			zap.String("conn_id", conn.Id()),
+			zap.String("conn_id", conn.ID()),
 			zap.String("message_id", msg.GetMessageId()),
 			zap.Any("user", conn.Session().User()),
 		)
@@ -96,7 +96,7 @@ func (h *Handler) OnReceiveFromFrontend(conn synp.Conn, payload []byte) error {
 
 	h.logger.Info(
 		"[synp-conn-evt-handler] received message from frontend",
-		zap.String("conn_id", conn.Id()),
+		zap.String("conn_id", conn.ID()),
 		zap.String("message", msg.String()),
 		zap.Any("user", conn.Session().User()),
 	)
@@ -106,7 +106,7 @@ func (h *Handler) OnReceiveFromFrontend(conn synp.Conn, payload []byte) error {
 	if !ok {
 		h.logger.Error(
 			"[synp-conn-evt-handler] unknown message type from frontend",
-			zap.String("conn_id", conn.Id()),
+			zap.String("conn_id", conn.ID()),
 			zap.Any("user", conn.Session().User()),
 		)
 		return ErrUnknownMessageType
@@ -115,11 +115,11 @@ func (h *Handler) OnReceiveFromFrontend(conn synp.Conn, payload []byte) error {
 	if err = uMsgHandler.Handle(conn, msg); err != nil {
 		// 删除消息缓存。
 		if h.needUncacheMessage(err) {
-			uncacheErr := h.uncacheMessage(user.Bid, msg)
+			uncacheErr := h.uncacheMessage(user.BID, msg)
 			if uncacheErr != nil {
 				h.logger.Error(
 					"[synp-conn-evt-handler] failed to uncache message",
-					zap.String("conn_id", conn.Id()),
+					zap.String("conn_id", conn.ID()),
 					zap.String("message", msg.String()),
 					zap.Error(uncacheErr),
 				)
@@ -147,7 +147,7 @@ func (h *Handler) decodePayload(payload []byte) (*messagev1.Message, error) {
 	return msg, nil
 }
 
-func (h *Handler) cacheMessage(bizId uint64, msg *messagev1.Message) (bool, error) {
+func (h *Handler) cacheMessage(bizID uint64, msg *messagev1.Message) (bool, error) {
 	if msg.GetCmd() == commonv1.CommandType_COMMAND_TYPE_HEARTBEAT {
 		return true, nil
 	}
@@ -155,14 +155,14 @@ func (h *Handler) cacheMessage(bizId uint64, msg *messagev1.Message) (bool, erro
 	ctx, cancel := context.WithTimeout(context.Background(), h.cacheRequestTimeout)
 	defer cancel()
 
-	return h.rdb.SetNX(ctx, h.cacheKey(bizId, msg.GetMessageId()), msg.GetMessageId(), h.cacheExpiration).Result()
+	return h.rdb.SetNX(ctx, h.cacheKey(bizID, msg.GetMessageId()), msg.GetMessageId(), h.cacheExpiration).Result()
 }
 
 func (h *Handler) needUncacheMessage(err error) bool {
 	return errors.Is(err, ErrUnknownMessageType) || errors.Is(err, ErrMaxRetryExceeded)
 }
 
-func (h *Handler) uncacheMessage(bizId uint64, msg *messagev1.Message) error {
+func (h *Handler) uncacheMessage(bizID uint64, msg *messagev1.Message) error {
 	if msg.GetCmd() == commonv1.CommandType_COMMAND_TYPE_HEARTBEAT {
 		return nil
 	}
@@ -170,15 +170,15 @@ func (h *Handler) uncacheMessage(bizId uint64, msg *messagev1.Message) error {
 	ctx, cancel := context.WithTimeout(context.Background(), h.cacheRequestTimeout)
 	defer cancel()
 
-	if _, err := h.rdb.Del(ctx, h.cacheKey(bizId, msg.GetMessageId())).Result(); err != nil {
+	if _, err := h.rdb.Del(ctx, h.cacheKey(bizID, msg.MessageId)).Result(); err != nil {
 		return fmt.Errorf("%w: %w", ErrUncacheMessage, err)
 	}
 
 	return nil
 }
 
-func (h *Handler) cacheKey(bizId uint64, messageId string) string {
-	return fmt.Sprintf("%d:%s", bizId, messageId)
+func (h *Handler) cacheKey(bizID uint64, messageID string) string {
+	return fmt.Sprintf("%d:%s", bizID, messageID)
 }
 
 func (h *Handler) OnReceiveFromBackend(conns []synp.Conn, msg *messagev1.PushMessage) error {
@@ -218,5 +218,4 @@ func NewHandler(
 		dMsgHandler:         dMsgHandler,
 		logger:              logger,
 	}
-
 }

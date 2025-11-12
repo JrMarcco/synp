@@ -8,7 +8,7 @@ import (
 
 // ConsumerFactory 是创建消费者的工厂函数。
 type ConsumerFactory interface {
-	NewConsumer(topic, groupId string) (Consumer, error)
+	NewConsumer(topic, groupID string) (Consumer, error)
 }
 
 type Consumer interface {

@@ -10,7 +10,7 @@ import (
 type Session interface {
 	User() User
 
-	Set(ctx context.Context, key string, val string) error
+	Set(ctx context.Context, key, val string) error
 	Get(ctx context.Context, key string) (string, error)
 
 	Destroy(ctx context.Context) error
@@ -35,20 +35,20 @@ const (
 
 // User 为 Session 的用户信息。
 type User struct {
-	Bid       uint64 `json:"bid"`
-	Uid       uint64 `json:"uid"`
-	Device    Device `json:"device"`     // 设备类型：mobile/tablet/pc
-	AutoClose bool   `json:"auto_close"` // 空闲时是否自动关闭连接
+	BID       uint64 `json:"bid"`
+	UID       uint64 `json:"uid"`
+	Device    Device `json:"device"`    // 设备类型：mobile/tablet/pc
+	AutoClose bool   `json:"autoClose"` // 空闲时是否自动关闭连接
 }
 
-func (u *User) ConnId() string {
-	return fmt.Sprintf("%d:%d:%s", u.Bid, u.Uid, u.Device)
+func (u *User) ConnID() string {
+	return fmt.Sprintf("%d:%d:%s", u.BID, u.UID, u.Device)
 }
 
 func (u *User) ConnKey() string {
-	return fmt.Sprintf("%d:%d", u.Bid, u.Uid)
+	return fmt.Sprintf("%d:%d", u.BID, u.UID)
 }
 
 func (u *User) SessionKey() string {
-	return fmt.Sprintf("synp:session:%d:%d", u.Bid, u.Uid)
+	return fmt.Sprintf("synp:session:%d:%d", u.BID, u.UID)
 }

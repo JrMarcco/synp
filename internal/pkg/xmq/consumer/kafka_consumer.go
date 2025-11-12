@@ -22,8 +22,8 @@ type KafkaConsumerFactory struct {
 	readerFactory KafkaReaderFactory
 }
 
-func (f *KafkaConsumerFactory) NewConsumer(topic, groupId string) (Consumer, error) {
-	return NewKafkaConsumer(topic, groupId, f.readerFactory), nil
+func (f *KafkaConsumerFactory) NewConsumer(topic, groupID string) (Consumer, error) {
+	return NewKafkaConsumer(topic, groupID, f.readerFactory), nil
 }
 
 func NewKafkaConsumerFactory(readerFactory KafkaReaderFactory) *KafkaConsumerFactory {
@@ -38,7 +38,7 @@ var _ Consumer = (*KafkaConsumer)(nil)
 // 负责从 kafka 中消费消息，并转换为 xmq.Message。
 type KafkaConsumer struct {
 	topic   string
-	groupId string
+	groupID string
 
 	reader *kafka.Reader
 
@@ -90,7 +90,7 @@ func (c *KafkaConsumer) readMessage() {
 			slog.Error(
 				"[synp-xmq-consumer] failed to read message from kafka",
 				"topic", c.topic,
-				"group_id", c.groupId,
+				"group_id", c.groupID,
 				"error", err,
 			)
 			continue
@@ -132,13 +132,13 @@ func (c *KafkaConsumer) Close() error {
 	return err
 }
 
-func NewKafkaConsumer(topic, groupId string, readerFactory KafkaReaderFactory) *KafkaConsumer {
+func NewKafkaConsumer(topic, groupID string, readerFactory KafkaReaderFactory) *KafkaConsumer {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	reader := readerFactory(topic, groupId)
+	reader := readerFactory(topic, groupID)
 	consumer := &KafkaConsumer{
 		topic:   topic,
-		groupId: groupId,
+		groupID: groupID,
 
 		reader: reader,
 

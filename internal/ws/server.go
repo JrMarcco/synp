@@ -21,9 +21,7 @@ import (
 	"go.uber.org/zap"
 )
 
-var (
-	ErrUnknownReceiver = errors.New("unknown receiver")
-)
+var ErrUnknownReceiver = errors.New("unknown receiver")
 
 var _ synp.Server = (*Server)(nil)
 
@@ -199,7 +197,7 @@ func (s *Server) handleConn(conn net.Conn) {
 		if err := synpConn.Close(); err != nil {
 			s.logger.Error(
 				"[synp-server] failed to close synp connection",
-				zap.String("conn_id", synpConn.Id()),
+				zap.String("conn_id", synpConn.ID()),
 				zap.Error(err),
 			)
 		}
@@ -209,7 +207,7 @@ func (s *Server) handleConn(conn net.Conn) {
 	if err := s.connHandler.OnConnect(synpConn); err != nil {
 		s.logger.Error(
 			"[synp-server] failed to handle on connect lifecycle event",
-			zap.String("conn_id", synpConn.Id()),
+			zap.String("conn_id", synpConn.ID()),
 			zap.Error(err),
 		)
 		// on connect 事件失败，直接返回。
@@ -221,7 +219,7 @@ func (s *Server) handleConn(conn net.Conn) {
 		if err := s.connHandler.OnDisconnect(synpConn); err != nil {
 			s.logger.Error(
 				"[synp-server] failed to handle on disconnect lifecycle event",
-				zap.String("conn_id", synpConn.Id()),
+				zap.String("conn_id", synpConn.ID()),
 				zap.Error(err),
 			)
 		}
@@ -293,8 +291,8 @@ func (s *Server) consumePushMessage(_ context.Context, msg *xmq.Message) error {
 
 func (s *Server) findConn(pushMsg *messagev1.PushMessage) ([]synp.Conn, error) {
 	conns, ok := s.connManager.FindUserConn(session.User{
-		Bid: pushMsg.GetBizId(),
-		Uid: pushMsg.GetReceiverId(),
+		BID: pushMsg.GetBizId(),
+		UID: pushMsg.GetReceiverId(),
 	})
 	if !ok {
 		return nil, fmt.Errorf("%w: user_id=%d, biz_id=%d", ErrUnknownReceiver, pushMsg.GetReceiverId(), pushMsg.GetBizId())
@@ -303,7 +301,7 @@ func (s *Server) findConn(pushMsg *messagev1.PushMessage) ([]synp.Conn, error) {
 }
 
 // consumeScaleUp 消费 scale up 事件。
-func (s *Server) consumeScaleUp(_ context.Context, msg *xmq.Message) error {
+func (s *Server) consumeScaleUp(_ context.Context, _ *xmq.Message) error {
 	// TODO: not implemented
 	panic("not implemented")
 }
@@ -328,7 +326,7 @@ func (s *Server) GracefulShutdown() error {
 		}
 	}
 
-	//TODO: 优雅关闭。
+	// TODO: 优雅关闭。
 
 	<-s.ctx.Done()
 	return s.Shutdown()

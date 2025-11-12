@@ -23,7 +23,7 @@ func InitKafkaConsumerFactory(readerFactory pkgconsumer.KafkaReaderFactory) pkgc
 
 type consumerConfig struct {
 	Topic      string `mapstructure:"topic"`
-	GroupId    string `mapstructure:"group_id"`
+	GroupID    string `mapstructure:"group_id"`
 	Partitions int32  `mapstructure:"partitions"`
 }
 
@@ -43,7 +43,7 @@ func InitPushMessageConsumer(params consumerFxParams) *gateway.Consumer {
 	return gateway.NewConsumer(
 		params.ConsumerFactory,
 		cfg.Topic,
-		cfg.GroupId,
+		cfg.GroupID,
 		cfg.Partitions,
 		params.Logger,
 	)

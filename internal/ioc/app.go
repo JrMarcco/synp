@@ -45,10 +45,10 @@ func InitApp(params appFxParams) *App {
 	}
 
 	params.Lifecycle.Append(fx.Hook{
-		OnStart: func(ctx context.Context) error {
+		OnStart: func(_ context.Context) error {
 			return app.Start()
 		},
-		OnStop: func(ctx context.Context) error {
+		OnStop: func(_ context.Context) error {
 			return app.Stop()
 		},
 	})

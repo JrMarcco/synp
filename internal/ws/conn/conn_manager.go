@@ -42,9 +42,10 @@ type DeviceConns struct {
 }
 
 func newDeviceConns() *DeviceConns {
+	const maxDeviceConnCnt = 3
 	return &DeviceConns{
 		// 一个用户最多只会有 3 个设备连接。
-		conns: make(map[session.Device]synp.Conn, 3),
+		conns: make(map[session.Device]synp.Conn, maxDeviceConnCnt),
 	}
 }
 
@@ -140,15 +141,15 @@ func (m *ConnManager) NewConn(ctx context.Context, netConn net.Conn, sess sessio
 	}
 
 	// 创建新连接
-	connId := user.ConnId()
+	connID := user.ConnID()
 	opts := m.convertToConnOpts(user, compressionState)
-	newConn := NewConn(ctx, connId, sess, netConn, opts...)
+	newConn := NewConn(ctx, connID, sess, netConn, opts...)
 
 	// 存储连接
 	m.storeConn(connKey, device, newConn)
 	m.logger.Info(
 		"[synp-conn-manager] successfully create connection",
-		zap.String("conn_id", connId),
+		zap.String("conn_id", connID),
 		zap.String("device", string(device)),
 		zap.Any("user", user),
 	)
@@ -177,7 +178,6 @@ func (m *ConnManager) storeConn(cid string, device session.Device, conn synp.Con
 	}
 	dc.add(device, conn)
 	m.connCnt.Add(1)
-
 }
 
 func (m *ConnManager) convertToConnOpts(user session.User, compressionState *compression.State) []option.Opt[Conn] {
@@ -230,7 +230,7 @@ func (m *ConnManager) RemoveConn(user session.User) bool {
 			if err != nil {
 				m.logger.Warn(
 					"[synp-conn-manager] failed to close connection",
-					zap.String("conn_id", conn.Id()),
+					zap.String("conn_id", conn.ID()),
 					zap.Error(err),
 				)
 			}

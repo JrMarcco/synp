@@ -46,7 +46,7 @@ func InitLogger(params loggerFxParams) *zap.Logger {
 	slog.SetDefault(slog.New(zapslog.NewHandler(logger.Core())))
 
 	params.Lifecycle.Append(fx.Hook{
-		OnStop: func(ctx context.Context) error {
+		OnStop: func(_ context.Context) error {
 			_ = logger.Sync()
 			return nil
 		},

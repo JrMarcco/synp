@@ -50,7 +50,7 @@ func (h *FrontendMsgHandler) Handle(conn synp.Conn, msg *messagev1.Message) erro
 	if err != nil {
 		h.logger.Error(
 			"[synp-frontend-msg-handler] failed to marshal ack payload",
-			zap.String("conn_id", conn.Id()),
+			zap.String("conn_id", conn.ID()),
 			zap.String("ack_payload", ackPayload.String()),
 			zap.Error(err),
 		)

@@ -11,7 +11,7 @@ import (
 func TestJsonCodec(t *testing.T) {
 	t.Parallel()
 
-	jsonCodec := codec.NewJsonCodec()
+	jsonCodec := codec.NewJSONCodec()
 	assert.Equal(t, "json", jsonCodec.Name())
 
 	suite.Run(t, &CodecSuite{codec: jsonCodec})
