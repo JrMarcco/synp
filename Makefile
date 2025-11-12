@@ -12,6 +12,7 @@ fmt:
 
 # clean up project dependencies
 .PHONY: tidy
+tidy:
 	@go mod tidy -v
 
 # check code format and dependencies
