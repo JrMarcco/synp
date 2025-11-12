@@ -6,4 +6,5 @@ if [ -n "$(make check)" ]; then
     exit 1
 fi
 
+echo "✅ [success] pre-commit hooks passed"
 exit 0

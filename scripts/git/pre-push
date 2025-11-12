@@ -11,4 +11,5 @@ if ! RES=$(make lint); then
     exit 1
 fi
 
+echo "✅ [success] code checks passed"
 exit 0
