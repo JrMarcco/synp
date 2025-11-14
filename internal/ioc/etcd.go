@@ -100,9 +100,9 @@ type etcdTLSConfig struct {
 	ServerName string `mapstructure:"server_name"`
 }
 
-func loadEtcdConfig() etcdConfig {
-	cfg := etcdConfig{}
-	if err := viper.UnmarshalKey("etcd", &cfg); err != nil {
+func loadEtcdConfig() *etcdConfig {
+	cfg := &etcdConfig{}
+	if err := viper.UnmarshalKey("etcd", cfg); err != nil {
 		panic(err)
 	}
 	return cfg
