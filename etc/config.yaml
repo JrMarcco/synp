@@ -17,12 +17,12 @@ synp:
 
 handler:
   event:
-    cache_request_timeout: 10000
-    cache_expiration: 10000
+    cache_request_timeout: 10s
+    cache_expiration: 10s
   message:
     frontend:
       topic: "frontend"
-      on_receive_timeout: 10000
+      on_receive_timeout: 10s
 
 # Kafka 配置
 # 使用 SASL/SCRAM-SHA-256 + TLS 认证
@@ -34,34 +34,24 @@ kafka:
     - "kafka-3.example.com:9093"
 
   # Producer 配置
-  # 消息确认机制：
-  #    0  = NoResponse (不等待确认，最快但可能丢失消息)
-  #    1  = WaitForLocal (等待 leader 确认)
-  #   -1  = WaitForAll (等待所有副本确认，最安全，推荐)
-  required_acks: -1
+  producer:
+    required_acks: -1            # all
+    compression: "snappy"        # 使用 snappy 压缩
+    max_message_bytes: 1024000   # 最大消息大小 1024000字节 = 1MB
+    retry_max: 3                 # 最大重试次数 3
+    batch_size: 100              # 批量大小 100
+    batch_timeout: 10ms          # 批量超时 10ms
+    write_timeout: 10s           # 写入超时 10s
+    idempotent_enabled: true     # 启用幂等性
 
-  # 压缩算法：none, gzip, snappy, lz4, zstd
-  # 推荐 snappy
-  compression: "snappy"
-
-  # 最大消息大小（字节），默认 1MB
-  max_message_bytes: 1024000
-
-  # 最大重试次数
-  retry_max: 3
-
-  # 重试间隔（毫秒）
-  retry_backoff: 100
-
-  # 超时时间（毫秒）
-  timeout: 30000
-
-  # 是否启用幂等性（推荐启用，可以防止消息重复发送）
-  # 启用后会自动设置 required_acks=-1 和 max_open_requests=1
-  idempotent_enabled: true
-
-  # 最大并发请求数（当 idempotent_enabled=false 时生效）
-  max_open_requests: 8
+  # Consumer 配置
+  consumer:
+    read_timeout: 10s            # 读取超时 10s
+    commit_interval: 1s          # 每秒提交一次
+    start_offset: -1             # 从最新消息开始（kafka.LastOffset）
+    min_bytes: 1                 # 最小 1 字节
+    max_bytes: 10e6              # 最大 10MB
+    max_wait: 500ms              # 最大等待 500ms
 
   # TLS 配置
   tls:
