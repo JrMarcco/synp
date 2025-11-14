@@ -11,7 +11,6 @@ import (
 	"github.com/JrMarcco/synp/internal/pkg/xmq/produce"
 	"github.com/spf13/viper"
 	"go.uber.org/fx"
-	"go.uber.org/zap"
 )
 
 var MessageHandlerFxOpt = fx.Module("message_handler", fx.Provide(
@@ -47,11 +46,10 @@ type heartbeatMsgHandlerFxParams struct {
 	fx.In
 
 	PushFunc message.PushFunc
-	Logger   *zap.Logger
 }
 
 func InitHeartbeatMsgHandler(params heartbeatMsgHandlerFxParams) upstream.UMsgHandler {
-	return upstream.NewHeartbeatMsgHandler(params.PushFunc, params.Logger)
+	return upstream.NewHeartbeatMsgHandler(params.PushFunc)
 }
 
 type frontendMsgHandlerFxParams struct {
@@ -60,8 +58,6 @@ type frontendMsgHandlerFxParams struct {
 	Codec    codec.Codec
 	Producer produce.Producer
 	PushFunc message.PushFunc
-
-	Logger *zap.Logger
 }
 
 func InitFrontendMsgHandler(params frontendMsgHandlerFxParams) upstream.UMsgHandler {
@@ -81,7 +77,6 @@ func InitFrontendMsgHandler(params frontendMsgHandlerFxParams) upstream.UMsgHand
 		params.Codec,
 		params.Producer,
 		params.PushFunc,
-		params.Logger,
 	)
 }
 
@@ -89,11 +84,10 @@ type downstreamAckHandlerFxParams struct {
 	fx.In
 
 	RetransmitManager *retransmit.Manager
-	Logger            *zap.Logger
 }
 
 func InitDownstreamAckHandler(params downstreamAckHandlerFxParams) upstream.UMsgHandler {
-	return upstream.NewDownstreamAckHandler(params.RetransmitManager, params.Logger)
+	return upstream.NewDownstreamAckHandler(params.RetransmitManager)
 }
 
 type backendMsgHandlerFxParams struct {
@@ -101,10 +95,8 @@ type backendMsgHandlerFxParams struct {
 
 	PushFunc          message.PushFunc
 	RetransmitManager *retransmit.Manager
-
-	Logger *zap.Logger
 }
 
 func InitBackendMsgHandler(params backendMsgHandlerFxParams) downstream.DMsgHandler {
-	return downstream.NewBackendMsgHandler(params.PushFunc, params.RetransmitManager, params.Logger)
+	return downstream.NewBackendMsgHandler(params.PushFunc, params.RetransmitManager)
 }

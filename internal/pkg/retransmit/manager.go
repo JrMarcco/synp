@@ -2,6 +2,7 @@ package retransmit
 
 import (
 	"fmt"
+	"log/slog"
 	"sync/atomic"
 	"time"
 
@@ -9,7 +10,6 @@ import (
 	"github.com/JrMarcco/synp"
 	messagev1 "github.com/JrMarcco/synp-api/api/go/message/v1"
 	"github.com/JrMarcco/synp/internal/pkg/message"
-	"go.uber.org/zap"
 )
 
 const (
@@ -41,11 +41,11 @@ func (t *Task) run() {
 
 	// 检查重传次数。
 	if t.retransmitCnt.Load() >= t.manager.maxRetryCnt {
-		t.manager.logger.Warn(
+		slog.Warn(
 			"[synp-retransmit-manager] retransmit task reach max retry cnt",
-			zap.String("conn_id", t.conn.ID()),
-			zap.String("message_id", t.msg.MessageId),
-			zap.Int32("retransmit_count", t.retransmitCnt.Load()),
+			"conn_id", t.conn.ID(),
+			"message_id", t.msg.MessageId,
+			"retransmit_count", t.retransmitCnt.Load(),
 		)
 		_ = t.manager.stopAndDelete(t.key)
 		return
@@ -54,12 +54,12 @@ func (t *Task) run() {
 	// 重传。
 	err := t.manager.taskFunc(t.conn, t.msg)
 	if err != nil {
-		t.manager.logger.Error(
+		slog.Error(
 			"[synp-retransmit-manager] failed to retransmit message",
-			zap.String("conn_id", t.conn.ID()),
-			zap.String("message_id", t.msg.MessageId),
-			zap.Int32("retransmit_count", t.retransmitCnt.Load()),
-			zap.Error(err),
+			"conn_id", t.conn.ID(),
+			"message_id", t.msg.MessageId,
+			"retransmit_count", t.retransmitCnt.Load(),
+			"error", err.Error(),
 		)
 
 		// 重传失败，直接停止重传任务。
@@ -68,11 +68,11 @@ func (t *Task) run() {
 	}
 
 	t.conn.UpdateActivityTime()
-	t.manager.logger.Debug(
+	slog.Debug(
 		"[synp-retransmit-manager] successfully retransmit message",
-		zap.String("conn_id", t.conn.ID()),
-		zap.String("message_id", t.msg.MessageId),
-		zap.Int32("retransmit_count", t.retransmitCnt.Load()),
+		"conn_id", t.conn.ID(),
+		"message_id", t.msg.MessageId,
+		"retransmit_count", t.retransmitCnt.Load(),
 	)
 
 	// 更新定时器。
@@ -104,8 +104,6 @@ type Manager struct {
 
 	taskFunc message.PushFunc
 	closed   atomic.Bool
-
-	logger *zap.Logger
 }
 
 func (m *Manager) Start(conns []synp.Conn, msg *messagev1.Message) {
@@ -133,12 +131,12 @@ func (m *Manager) start(conn synp.Conn, msg *messagev1.Message) {
 	task.timerPtr.Store(time.AfterFunc(m.retryInterval, task.run))
 	m.totalTaskCnt.Add(1)
 
-	m.logger.Debug(
+	slog.Debug(
 		"[synp-retransmit-manager] successfully start retransmit task",
-		zap.String("conn_id", conn.ID()),
-		zap.String("message_id", msg.MessageId),
-		zap.Duration("retry_interval", m.retryInterval),
-		zap.Int32("max_retry_cnt", m.maxRetryCnt),
+		"conn_id", conn.ID(),
+		"message_id", msg.MessageId,
+		"retry_interval", m.retryInterval,
+		"max_retry_cnt", m.maxRetryCnt,
 	)
 }
 
@@ -148,11 +146,11 @@ func (m *Manager) Stop(connID, messageID string) {
 	if task, ok := m.tasks.Load(key); ok {
 		_ = m.stopAndDelete(key)
 
-		m.logger.Debug(
+		slog.Debug(
 			"[synp-retransmit-manager] successfully stop retransmit task",
-			zap.String("conn_id", connID),
-			zap.String("message_id", messageID),
-			zap.Int32("retransmit_count", task.retransmitCnt.Load()),
+			"conn_id", connID,
+			"message_id", messageID,
+			"retransmit_count", task.retransmitCnt.Load(),
 		)
 	}
 }
@@ -178,10 +176,10 @@ func (m *Manager) ClearByConn(connID string) {
 	})
 
 	if cnt > 0 {
-		m.logger.Info(
+		slog.Info(
 			"[synp-retransmit-manager] successfully clear retransmit tasks by connection",
-			zap.String("conn_id", connID),
-			zap.Int("task_cleared_cnt", cnt),
+			"conn_id", connID,
+			"task_cleared_cnt", cnt,
 		)
 	}
 }
@@ -209,13 +207,13 @@ func (m *Manager) Close() {
 		return true
 	})
 
-	m.logger.Info(
+	slog.Info(
 		"[synp-retransmit-manager] retransmit manager closed",
-		zap.Int("task_cleared_cnt", cnt),
+		"task_cleared_cnt", cnt,
 	)
 }
 
-func NewManager(retryInterval time.Duration, maxRetryCnt int32, taskFunc message.PushFunc, logger *zap.Logger) *Manager {
+func NewManager(retryInterval time.Duration, maxRetryCnt int32, taskFunc message.PushFunc) *Manager {
 	if retryInterval <= 0 {
 		retryInterval = DefaultRetryInterval
 	}
@@ -234,6 +232,5 @@ func NewManager(retryInterval time.Duration, maxRetryCnt int32, taskFunc message
 		retryInterval: retryInterval,
 		maxRetryCnt:   maxRetryCnt,
 		taskFunc:      taskFunc,
-		logger:        logger,
 	}
 }

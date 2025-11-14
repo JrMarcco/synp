@@ -6,7 +6,6 @@ import (
 	messagev1 "github.com/JrMarcco/synp-api/api/go/message/v1"
 	"github.com/JrMarcco/synp/internal/pkg/message"
 	"github.com/JrMarcco/synp/internal/pkg/retransmit"
-	"go.uber.org/zap"
 )
 
 var _ DMsgHandler = (*BackendMsgHandler)(nil)
@@ -15,7 +14,6 @@ var _ DMsgHandler = (*BackendMsgHandler)(nil)
 type BackendMsgHandler struct {
 	pushFunc          message.PushFunc
 	retransmitManager *retransmit.Manager
-	logger            *zap.Logger
 }
 
 func (h *BackendMsgHandler) Handle(conns []synp.Conn, pushMsg *messagev1.PushMessage) error {
@@ -43,11 +41,9 @@ func (h *BackendMsgHandler) Handle(conns []synp.Conn, pushMsg *messagev1.PushMes
 func NewBackendMsgHandler(
 	pushFunc message.PushFunc,
 	retransmitManager *retransmit.Manager,
-	logger *zap.Logger,
 ) *BackendMsgHandler {
 	return &BackendMsgHandler{
 		pushFunc:          pushFunc,
 		retransmitManager: retransmitManager,
-		logger:            logger,
 	}
 }

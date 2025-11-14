@@ -3,6 +3,7 @@ package upstream
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/JrMarcco/synp"
@@ -12,7 +13,6 @@ import (
 	"github.com/JrMarcco/synp/internal/pkg/message"
 	"github.com/JrMarcco/synp/internal/pkg/xmq"
 	"github.com/JrMarcco/synp/internal/pkg/xmq/produce"
-	"go.uber.org/zap"
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
@@ -26,8 +26,6 @@ type FrontendMsgHandler struct {
 	codec    codec.Codec
 	producer produce.Producer
 	pushFunc message.PushFunc
-
-	logger *zap.Logger
 }
 
 func (h *FrontendMsgHandler) Handle(conn synp.Conn, msg *messagev1.Message) error {
@@ -48,11 +46,11 @@ func (h *FrontendMsgHandler) Handle(conn synp.Conn, msg *messagev1.Message) erro
 	// 发送消息到业务服务端。
 	body, err := protojson.Marshal(ackPayload)
 	if err != nil {
-		h.logger.Error(
+		slog.Error(
 			"[synp-frontend-msg-handler] failed to marshal ack payload",
-			zap.String("conn_id", conn.ID()),
-			zap.String("ack_payload", ackPayload.String()),
-			zap.Error(err),
+			"conn_id", conn.ID(),
+			"ack_payload", ackPayload.String(),
+			"error", err.Error(),
 		)
 		return fmt.Errorf("failed to marshal ack payload: %w", err)
 	}
@@ -69,10 +67,10 @@ func (h *FrontendMsgHandler) Handle(conn synp.Conn, msg *messagev1.Message) erro
 func (h *FrontendMsgHandler) forwardToBackend(msg *messagev1.Message) error {
 	val, err := protojson.Marshal(msg)
 	if err != nil {
-		h.logger.Error(
+		slog.Error(
 			"[synp-frontend-msg-handler] failed to marshal message",
-			zap.String("message", msg.String()),
-			zap.Error(err),
+			"message", msg.String(),
+			"error", err.Error(),
 		)
 		return fmt.Errorf("failed to marshal message: %w", err)
 	}
@@ -87,9 +85,9 @@ func (h *FrontendMsgHandler) forwardToBackend(msg *messagev1.Message) error {
 	defer cancel()
 
 	if err := h.producer.Produce(ctx, mqMsg); err != nil {
-		h.logger.Error(
+		slog.Error(
 			"[synp-frontend-msg-handler] failed to forward message to backend with messsage queue",
-			zap.Error(err),
+			"error", err.Error(),
 		)
 		return fmt.Errorf("failed to forward message: %w", err)
 	}
@@ -107,7 +105,6 @@ func NewFrontendMsgHandler(
 	codec codec.Codec,
 	producer produce.Producer,
 	pushFunc message.PushFunc,
-	logger *zap.Logger,
 ) *FrontendMsgHandler {
 	return &FrontendMsgHandler{
 		mqTopic:          mqTopic,
@@ -116,7 +113,5 @@ func NewFrontendMsgHandler(
 		codec:    codec,
 		producer: producer,
 		pushFunc: pushFunc,
-
-		logger: logger,
 	}
 }

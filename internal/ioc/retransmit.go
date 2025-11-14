@@ -8,7 +8,6 @@ import (
 	"github.com/JrMarcco/synp/internal/pkg/retransmit"
 	"github.com/spf13/viper"
 	"go.uber.org/fx"
-	"go.uber.org/zap"
 )
 
 var RetransmitManagerFxOpt = fx.Module("retransmit_manager", fx.Provide(InitRetransmitManager))
@@ -16,9 +15,7 @@ var RetransmitManagerFxOpt = fx.Module("retransmit_manager", fx.Provide(InitRetr
 type retransmitManagerFxParams struct {
 	fx.In
 
-	PushFunc message.PushFunc
-	Logger   *zap.Logger
-
+	PushFunc  message.PushFunc
 	Lifecycle fx.Lifecycle
 }
 
@@ -37,13 +34,11 @@ func InitRetransmitManager(params retransmitManagerFxParams) *retransmit.Manager
 		time.Duration(cfg.Interval)*time.Millisecond,
 		int32(cfg.MaxRetry),
 		params.PushFunc,
-		params.Logger,
 	)
 
 	params.Lifecycle.Append(fx.Hook{
 		OnStop: func(_ context.Context) error {
 			manager.Close()
-			params.Logger.Info("[synp-ioc] retransmit manager closed")
 			return nil
 		},
 	})

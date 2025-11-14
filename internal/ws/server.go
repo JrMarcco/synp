@@ -348,8 +348,8 @@ func NewServer(
 		connManager: connManager,
 		connHandler: connHandler,
 
-		connLimiter: limiter.NewTokenLimiter(limiter.DefaultConfig(), logger), // 默认令牌桶限流器。
-		backoff:     backoff.NewExponentialBackOff(),                          // 默认退避策略。
+		connLimiter: limiter.NewTokenLimiter(limiter.DefaultConfig()), // 默认令牌桶限流器。
+		backoff:     backoff.NewExponentialBackOff(),                  // 默认退避策略。
 
 		ctx:        ctx,
 		cancelFunc: cancel,

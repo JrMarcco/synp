@@ -3,10 +3,9 @@ package limiter
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"sync/atomic"
 	"time"
-
-	"go.uber.org/zap"
 )
 
 type TokenLimiterConfig struct {
@@ -83,8 +82,6 @@ type TokenLimiter struct {
 
 	ctx        context.Context
 	cancelFunc context.CancelFunc
-
-	logger *zap.Logger
 }
 
 // Start 开启一个 goroutine，逐步增加桶的容量。
@@ -92,22 +89,22 @@ func (l *TokenLimiter) Start(ctx context.Context) {
 	ticker := time.NewTicker(l.cfg.IncreaseInterval)
 	defer ticker.Stop()
 
-	l.logger.Info("[synp-limiter] start capacity increasing goroutine")
+	slog.Info("[synp-limiter] start capacity increasing goroutine")
 
 	for {
 		select {
 		case <-ctx.Done():
-			l.logger.Info("[synp-limiter] outter context canceled, stop capacity increasing goroutine")
+			slog.Info("[synp-limiter] outter context canceled, stop capacity increasing goroutine")
 			return
 
 		case <-l.ctx.Done():
-			l.logger.Info("[synp-limiter] inner context canceled, stop capacity increasing goroutine")
+			slog.Info("[synp-limiter] inner context canceled, stop capacity increasing goroutine")
 			return
 
 		case <-ticker.C:
 			curr := l.currCapacity.Load()
 			if curr >= l.cfg.MaxCapacity {
-				l.logger.Info("[synp-limiter] capacity reached max, stop capacity increasing goroutine")
+				slog.Info("[synp-limiter] capacity reached max, stop capacity increasing goroutine")
 				return
 			}
 
@@ -118,11 +115,11 @@ func (l *TokenLimiter) Start(ctx context.Context) {
 			}
 			l.currCapacity.Store(newCap)
 
-			l.logger.Info(
+			slog.Info(
 				"[synp-limiter] capacity increased",
-				zap.Int64("from", curr),
-				zap.Int64("to", newCap),
-				zap.Int64("increase_step", l.cfg.IncreaseStep),
+				"from", curr,
+				"to", newCap,
+				"increase_step", l.cfg.IncreaseStep,
 			)
 		}
 	}
@@ -149,14 +146,14 @@ func (l *TokenLimiter) Release() bool {
 	default:
 		// 理论上不会执行到这里。
 		// 执行到这里通常意味着 Release 的调用次数超过 Acquire 的调用次数。
-		l.logger.Warn("[synp-limiter] failed to release token, bucket is full")
+		slog.Warn("[synp-limiter] failed to release token, bucket is full")
 		return false
 	}
 }
 
 func (l *TokenLimiter) Close() error {
 	l.cancelFunc()
-	l.logger.Info("[synp-limiter] token limiter closed")
+	slog.Info("[synp-limiter] token limiter closed")
 	return nil
 }
 
@@ -164,15 +161,13 @@ func (l *TokenLimiter) Cap() int64 {
 	return l.currCapacity.Load()
 }
 
-func NewTokenLimiter(cfg TokenLimiterConfig, logger *zap.Logger) *TokenLimiter {
+func NewTokenLimiter(cfg TokenLimiterConfig) *TokenLimiter {
 	ctx, cancel := context.WithCancel(context.Background())
 	tl := &TokenLimiter{
 		cfg: cfg,
 
 		ctx:        ctx,
 		cancelFunc: cancel,
-
-		logger: logger,
 	}
 
 	// 初始令牌。
@@ -181,10 +176,10 @@ func NewTokenLimiter(cfg TokenLimiterConfig, logger *zap.Logger) *TokenLimiter {
 	}
 	tl.currCapacity.Store(cfg.InitCapacity)
 
-	tl.logger.Info(
+	slog.Info(
 		"[token-limiter] successfully initialized",
-		zap.Int64("init_capacity", cfg.InitCapacity),
-		zap.Int64("max_capacity", cfg.MaxCapacity),
+		"init_capacity", cfg.InitCapacity,
+		"max_capacity", cfg.MaxCapacity,
 	)
 
 	return tl
