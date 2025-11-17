@@ -11,17 +11,17 @@ import (
 	"go.uber.org/zap"
 )
 
-var UpgraderFxOpt = fx.Module("upgrader", fx.Provide(InitUpgrader))
+var UpgraderFxOpt = fx.Module("upgrader", fx.Provide(initUpgrader))
 
 type upgraderFxParams struct {
 	fx.In
 
-	Redis     redis.Cmdable
+	Rdb       redis.Cmdable
 	Validator auth.Validator
 	Logger    *zap.Logger
 }
 
-func InitUpgrader(params upgraderFxParams) synp.Upgrader {
+func initUpgrader(params upgraderFxParams) synp.Upgrader {
 	type config struct {
 		Enabled                 bool `mapstructure:"enabled"`
 		ServerMaxWindowBits     int  `mapstructure:"server_max_window_bits"`
@@ -36,7 +36,7 @@ func InitUpgrader(params upgraderFxParams) synp.Upgrader {
 		panic(err)
 	}
 
-	return ws.NewUpgrader(params.Redis, params.Validator, compression.Config{
+	return ws.NewUpgrader(params.Rdb, params.Validator, compression.Config{
 		Enabled:                 cfg.Enabled,
 		ServerMaxWindowBits:     cfg.ServerMaxWindowBits,
 		ServerNoContextTakeover: cfg.ServerNoContextTakeover,

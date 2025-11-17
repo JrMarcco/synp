@@ -21,19 +21,21 @@ func main() {
 		ioc.LoggerFxOpt,
 
 		// 初始化 etcd.Client。
-		ioc.EtcdFxOpt,
+		// ioc.EtcdFxOpt,
 
 		// 初始化 redis.Cmdable。
 		ioc.RedisFxOpt,
 
 		// 初始化 kafka。
 		ioc.KafkaFxOpt,
-
-		// 初始化 kafka consumer。
 		ioc.KafkaConsumerFxOpt,
+		ioc.KafkaProducerFxOpt,
 
 		// 初始化 token validator。
 		ioc.ValidatorFxOpt,
+
+		// 初始化 codec。
+		ioc.CodecFxOpt,
 
 		// 初始化 upgrader。
 		ioc.UpgraderFxOpt,
@@ -46,6 +48,9 @@ func main() {
 
 		// 初始化 message handler。
 		ioc.MessageHandlerFxOpt,
+
+		// 初始化 conn handler 和 conn manager。
+		ioc.ConnFxOpt,
 
 		// 初始化 app。
 		ioc.AppFxOpt,

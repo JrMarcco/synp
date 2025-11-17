@@ -16,28 +16,28 @@ import (
 var MessageHandlerFxOpt = fx.Module("message_handler", fx.Provide(
 	// 心跳消息处理器。
 	fx.Annotate(
-		InitHeartbeatMsgHandler,
+		initHeartbeatMsgHandler,
 		fx.As(new(upstream.UMsgHandler)),
 		fx.ResultTags(`group:"upstream_message_handler"`),
 	),
 
 	// 前端消息处理器。
 	fx.Annotate(
-		InitFrontendMsgHandler,
+		initFrontendMsgHandler,
 		fx.As(new(upstream.UMsgHandler)),
 		fx.ResultTags(`group:"upstream_message_handler"`),
 	),
 
 	// 下行消息 ack 处理器。
 	fx.Annotate(
-		InitDownstreamAckHandler,
+		initDownstreamAckHandler,
 		fx.As(new(upstream.UMsgHandler)),
 		fx.ResultTags(`group:"upstream_message_handler"`),
 	),
 
 	// 后端消息处理器。
 	fx.Annotate(
-		InitBackendMsgHandler,
+		initBackendMsgHandler,
 		fx.As(new(downstream.DMsgHandler)),
 	),
 ))
@@ -48,7 +48,7 @@ type heartbeatMsgHandlerFxParams struct {
 	PushFunc message.PushFunc
 }
 
-func InitHeartbeatMsgHandler(params heartbeatMsgHandlerFxParams) upstream.UMsgHandler {
+func initHeartbeatMsgHandler(params heartbeatMsgHandlerFxParams) *upstream.HeartbeatMsgHandler {
 	return upstream.NewHeartbeatMsgHandler(params.PushFunc)
 }
 
@@ -60,7 +60,7 @@ type frontendMsgHandlerFxParams struct {
 	PushFunc message.PushFunc
 }
 
-func InitFrontendMsgHandler(params frontendMsgHandlerFxParams) upstream.UMsgHandler {
+func initFrontendMsgHandler(params frontendMsgHandlerFxParams) *upstream.FrontendMsgHandler {
 	type config struct {
 		Topic            string `mapstructure:"topic"`
 		OnReceiveTimeout int    `mapstructure:"on_receive_timeout"`
@@ -86,7 +86,7 @@ type downstreamAckHandlerFxParams struct {
 	RetransmitManager *retransmit.Manager
 }
 
-func InitDownstreamAckHandler(params downstreamAckHandlerFxParams) upstream.UMsgHandler {
+func initDownstreamAckHandler(params downstreamAckHandlerFxParams) *upstream.DownstreamAckHandler {
 	return upstream.NewDownstreamAckHandler(params.RetransmitManager)
 }
 
@@ -97,6 +97,6 @@ type backendMsgHandlerFxParams struct {
 	RetransmitManager *retransmit.Manager
 }
 
-func InitBackendMsgHandler(params backendMsgHandlerFxParams) downstream.DMsgHandler {
+func initBackendMsgHandler(params backendMsgHandlerFxParams) *downstream.BackendMsgHandler {
 	return downstream.NewBackendMsgHandler(params.PushFunc, params.RetransmitManager)
 }

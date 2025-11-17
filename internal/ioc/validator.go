@@ -8,9 +8,9 @@ import (
 	"go.uber.org/fx"
 )
 
-var ValidatorFxOpt = fx.Module("validator", fx.Provide(InitValidator))
+var ValidatorFxOpt = fx.Module("validator", fx.Provide(initValidator))
 
-func InitValidator() auth.Validator {
+func initValidator() auth.Validator {
 	type config struct {
 		Issuer  string `mapstructure:"issuer"`
 		Private string `mapstructure:"private"`

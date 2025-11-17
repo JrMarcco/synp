@@ -11,6 +11,8 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
+const defaultMessageChanSize = 1024
+
 // KafkaReaderFactory 是创建 kafka Reader 的工厂函数。
 type KafkaReaderFactory func(topic string, groupId string) *kafka.Reader
 
@@ -87,12 +89,7 @@ func (c *KafkaConsumer) readMessage() {
 			if errors.Is(err, io.ErrClosedPipe) || errors.Is(err, io.EOF) || errors.Is(err, context.Canceled) {
 				return
 			}
-			slog.Error(
-				"[synp-xmq-consumer] failed to read message from kafka",
-				"topic", c.topic,
-				"group_id", c.groupID,
-				"error", err,
-			)
+			slog.Warn("[synp-xmq-consumer] failed to read message from kafka", "err", err.Error())
 			continue
 		}
 
@@ -142,7 +139,7 @@ func NewKafkaConsumer(topic, groupID string, readerFactory KafkaReaderFactory) *
 
 		reader: reader,
 
-		messageChan: make(chan *xmq.Message),
+		messageChan: make(chan *xmq.Message, defaultMessageChanSize),
 
 		ctx:        ctx,
 		cancelFunc: cancel,

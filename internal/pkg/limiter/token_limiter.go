@@ -166,6 +166,8 @@ func NewTokenLimiter(cfg TokenLimiterConfig) *TokenLimiter {
 	tl := &TokenLimiter{
 		cfg: cfg,
 
+		tokens: make(chan struct{}, cfg.InitCapacity),
+
 		ctx:        ctx,
 		cancelFunc: cancel,
 	}

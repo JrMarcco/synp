@@ -5,21 +5,22 @@ import (
 
 	"github.com/JrMarcco/synp"
 	"github.com/JrMarcco/synp/internal/ws"
+	"github.com/JrMarcco/synp/internal/ws/gateway"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 )
 
-var AppFxOpt = fx.Module("app", fx.Provide(InitApp))
+var AppFxOpt = fx.Module("app", fx.Invoke(initApp))
 
-type App struct {
+type app struct {
 	wsSvr synp.Server
 }
 
-func (app *App) Start() error {
+func (app *app) Start() error {
 	return app.wsSvr.Start()
 }
 
-func (app *App) Stop() error {
+func (app *app) Stop() error {
 	return app.wsSvr.Shutdown()
 }
 
@@ -30,17 +31,19 @@ type appFxParams struct {
 	ConnManager synp.ConnManager
 	ConnHandler synp.Handler
 
+	Consumers map[string]*gateway.Consumer
+
 	Logger    *zap.Logger
 	Lifecycle fx.Lifecycle
 }
 
-func InitApp(params appFxParams) *App {
+func initApp(params appFxParams) *app {
 	wsCfg := ws.DefaultConfig()
 	wsSvr := ws.NewServer(
-		wsCfg, params.Upgrader, params.ConnManager, params.ConnHandler, params.Logger,
+		wsCfg, params.Upgrader, params.ConnManager, params.ConnHandler, params.Consumers, params.Logger,
 	)
 
-	app := &App{
+	app := &app{
 		wsSvr: wsSvr,
 	}
 

@@ -203,7 +203,7 @@ func NewHandler(
 	uMsgHandlers []upstream.UMsgHandler,
 	dMsgHandler downstream.DMsgHandler,
 	logger *zap.Logger,
-) synp.Handler {
+) *Handler {
 	m := make(map[commonv1.CommandType]upstream.UMsgHandler)
 	for _, handler := range uMsgHandlers {
 		m[handler.CmdType()] = handler

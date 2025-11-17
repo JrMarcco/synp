@@ -6,7 +6,6 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/JrMarcco/synp/internal/pkg/xmq/consumer"
@@ -18,7 +17,7 @@ import (
 	"go.uber.org/zap"
 )
 
-var KafkaFxOpt = fx.Module("kafka", fx.Provide(InitKafka))
+var KafkaFxOpt = fx.Module("kafka", fx.Provide(initKafka))
 
 type kafkaFxResult struct {
 	fx.Out
@@ -34,7 +33,7 @@ type kafkaFxParams struct {
 	Lifecycle fx.Lifecycle
 }
 
-func InitKafka(params kafkaFxParams) kafkaFxResult {
+func initKafka(params kafkaFxParams) kafkaFxResult {
 	cfg := loadKafkaConfig()
 
 	// 配置 TLS。
@@ -73,7 +72,7 @@ func InitKafka(params kafkaFxParams) kafkaFxResult {
 	}
 
 	params.Logger.Info(
-		"[synp-ioc] successfully created kafka writer",
+		"[synp-ioc-kafka] successfully created kafka writer",
 		zap.Strings("brokers", cfg.Brokers),
 		zap.String("compression", cfg.Producer.Compression),
 		zap.Int("required_acks", cfg.Producer.RequiredAcks),
@@ -107,7 +106,7 @@ func InitKafka(params kafkaFxParams) kafkaFxResult {
 		})
 
 		params.Logger.Info(
-			"[synp-ioc] created kafka reader",
+			"[synp-ioc-kafka] created kafka reader",
 			zap.Strings("brokers", cfg.Brokers),
 			zap.String("topic", topic),
 			zap.String("group_id", groupId),
@@ -120,10 +119,10 @@ func InitKafka(params kafkaFxParams) kafkaFxResult {
 	params.Lifecycle.Append(fx.Hook{
 		OnStop: func(_ context.Context) error {
 			if err := writer.Close(); err != nil {
-				params.Logger.Error("[synp-ioc] failed to close kafka writer", zap.Error(err))
+				params.Logger.Error("[synp-ioc-kafka] failed to close kafka writer", zap.Error(err))
 				return fmt.Errorf("failed to close kafka writer: %w", err)
 			}
-			params.Logger.Info("[synp-ioc] kafka writer closed")
+			params.Logger.Info("[synp-ioc-kafka] kafka writer closed")
 			return nil
 		},
 	})
@@ -195,29 +194,14 @@ func configureKafkaTLS(tlsCfg kafkaTLSConfig, logger *zap.Logger) (*tls.Config, 
 		InsecureSkipVerify: false, // 强制 TLS 认证
 	}
 
-	// 加载 CA 证书（用于验证服务器的证书是否可信）。
-	caCert, err := os.ReadFile(tlsCfg.CAFile)
-	if err != nil {
-		logger.Error(
-			"[synp-ioc] failed to load CA file for kafka",
-			zap.String("ca_file", tlsCfg.CAFile),
-			zap.Error(err),
-		)
-		return nil, fmt.Errorf("failed to load CA file for kafka: %w", err)
-	}
-
 	caCertPool := x509.NewCertPool()
-	if !caCertPool.AppendCertsFromPEM(caCert) {
-		logger.Error("[synp-ioc] failed to append CA certificate to pool for kafka")
+	if !caCertPool.AppendCertsFromPEM([]byte(tlsCfg.CAFile)) {
+		logger.Error("[synp-ioc-kafka] failed to append CA certificate to pool for kafka")
 		return nil, fmt.Errorf("failed to append CA certificate to pool for kafka")
 	}
-
 	tlsConf.RootCAs = caCertPool
 
-	logger.Info(
-		"[synp-ioc] successfully configured TLS for kafka",
-		zap.String("ca_file", tlsCfg.CAFile),
-	)
+	logger.Info("[synp-ioc-kafka] successfully configured TLS for kafka")
 
 	return tlsConf, nil
 }
@@ -231,7 +215,7 @@ func configureKafkaSasl(saslCfg kafkaSaslConfig, logger *zap.Logger) (sasl.Mecha
 	mechanism, err := scram.Mechanism(scram.SHA256, saslCfg.Username, saslCfg.Password)
 	if err != nil {
 		logger.Error(
-			"[synp-ioc] failed to create SASL mechanism",
+			"[synp-ioc-kafka] failed to create SASL mechanism",
 			zap.String("username", saslCfg.Username),
 			zap.Error(err),
 		)
@@ -239,7 +223,7 @@ func configureKafkaSasl(saslCfg kafkaSaslConfig, logger *zap.Logger) (sasl.Mecha
 	}
 
 	logger.Info(
-		"[synp-ioc] successfully configured SASL/SCRAM-SHA-256 for kafka",
+		"[synp-ioc-kafka] successfully configured SASL/SCRAM-SHA-256 for kafka",
 		zap.String("username", saslCfg.Username),
 	)
 

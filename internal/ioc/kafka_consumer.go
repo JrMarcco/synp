@@ -9,16 +9,27 @@ import (
 )
 
 var KafkaConsumerFxOpt = fx.Module("kafka_consumer", fx.Provide(
-	// kafka consumer factory。
-	InitKafkaConsumerFactory,
-	fx.Annotate(
-		InitPushMessageConsumer,
-		fx.ResultTags(`group:"gateway_consumer"`),
-	),
+	initKafkaConsumerFactory,
+	initKafkaConsumers,
 ))
 
-func InitKafkaConsumerFactory(readerFactory pkgconsumer.KafkaReaderFactory) pkgconsumer.ConsumerFactory {
+func initKafkaConsumerFactory(readerFactory pkgconsumer.KafkaReaderFactory) pkgconsumer.ConsumerFactory {
 	return pkgconsumer.NewKafkaConsumerFactory(readerFactory)
+}
+
+type consumersFxParams struct {
+	fx.In
+
+	ConsumerFactory pkgconsumer.ConsumerFactory
+	Logger          *zap.Logger
+}
+
+func initKafkaConsumers(params consumersFxParams) map[string]*gateway.Consumer {
+	consumers := make(map[string]*gateway.Consumer)
+
+	consumers[gateway.EventPushMessage] = pushMessageConsumer(params.ConsumerFactory, params.Logger)
+
+	return consumers
 }
 
 type consumerConfig struct {
@@ -27,24 +38,17 @@ type consumerConfig struct {
 	Partitions int32  `mapstructure:"partitions"`
 }
 
-type consumerFxParams struct {
-	fx.In
-
-	ConsumerFactory pkgconsumer.ConsumerFactory
-	Logger          *zap.Logger
-}
-
-func InitPushMessageConsumer(params consumerFxParams) *gateway.Consumer {
+func pushMessageConsumer(consumerFactory pkgconsumer.ConsumerFactory, logger *zap.Logger) *gateway.Consumer {
 	cfg := consumerConfig{}
-	if err := viper.UnmarshalKey("gateway.consumer.push_message", &cfg); err != nil {
+	if err := viper.UnmarshalKey("synp.gateway.consumer.event_message_downstream", &cfg); err != nil {
 		panic(err)
 	}
 
 	return gateway.NewConsumer(
-		params.ConsumerFactory,
+		consumerFactory,
 		cfg.Topic,
 		cfg.GroupID,
 		cfg.Partitions,
-		params.Logger,
+		logger,
 	)
 }

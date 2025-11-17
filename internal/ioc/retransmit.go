@@ -10,7 +10,7 @@ import (
 	"go.uber.org/fx"
 )
 
-var RetransmitManagerFxOpt = fx.Module("retransmit_manager", fx.Provide(InitRetransmitManager))
+var RetransmitManagerFxOpt = fx.Module("retransmit_manager", fx.Provide(initRetransmitManager))
 
 type retransmitManagerFxParams struct {
 	fx.In
@@ -19,7 +19,7 @@ type retransmitManagerFxParams struct {
 	Lifecycle fx.Lifecycle
 }
 
-func InitRetransmitManager(params retransmitManagerFxParams) *retransmit.Manager {
+func initRetransmitManager(params retransmitManagerFxParams) *retransmit.Manager {
 	type config struct {
 		Interval int `mapstructure:"interval"`
 		MaxRetry int `mapstructure:"max_retry"`

@@ -95,7 +95,7 @@ func (dc *DeviceConns) clear() int {
 	return cnt
 }
 
-type ConnManagerConfig struct {
+type ConnConfig struct {
 	ReadTimeout  time.Duration
 	WriteTimeout time.Duration
 
@@ -113,7 +113,7 @@ type ConnManagerConfig struct {
 var _ synp.ConnManager = (*ConnManager)(nil)
 
 type ConnManager struct {
-	cfg *ConnManagerConfig
+	cfg *ConnConfig
 
 	conns   *xsync.Map[string, *DeviceConns]
 	connCnt atomic.Int64
@@ -282,24 +282,32 @@ func (m *ConnManager) FindUserConn(user session.User) ([]synp.Conn, bool) {
 	return dc.findAll()
 }
 
-func NewConnManager(cfg *ConnManagerConfig, logger *zap.Logger) *ConnManager {
-	if cfg == nil {
-		cfg = &ConnManagerConfig{
-			ReadTimeout:       DefaultReadTiemout,
-			WriteTimeout:      DefaultWriteTiemout,
-			InitRetryInterval: DefaultInitRetryInterval,
-			MaxRetryInterval:  DefaultMaxRetryInterval,
-			MaxRetryCount:     DefaultMaxRetryCount,
-			SendBufferSize:    DefaultSendBufferSize,
-			ReceiveBufferSize: DefaultReceiveBufferSize,
-			CloseTimeout:      DefaultCloseTimeout,
-			RateLimit:         DefaultRateLimit,
-		}
+func ConnManagerWithConfig(cfg *ConnConfig) option.Opt[ConnManager] {
+	return func(m *ConnManager) {
+		m.cfg = cfg
+	}
+}
+
+func NewConnManager(logger *zap.Logger, opts ...option.Opt[ConnManager]) *ConnManager {
+	cfg := &ConnConfig{
+		ReadTimeout:       DefaultReadTiemout,
+		WriteTimeout:      DefaultWriteTiemout,
+		InitRetryInterval: DefaultInitRetryInterval,
+		MaxRetryInterval:  DefaultMaxRetryInterval,
+		MaxRetryCount:     DefaultMaxRetryCount,
+		SendBufferSize:    DefaultSendBufferSize,
+		ReceiveBufferSize: DefaultReceiveBufferSize,
+		CloseTimeout:      DefaultCloseTimeout,
+		RateLimit:         DefaultRateLimit,
 	}
 
-	return &ConnManager{
+	cm := &ConnManager{
 		cfg:    cfg,
 		conns:  &xsync.Map[string, *DeviceConns]{},
 		logger: logger,
 	}
+
+	option.Apply(cm, opts...)
+
+	return cm
 }

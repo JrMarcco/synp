@@ -34,7 +34,7 @@ type Server struct {
 	connManager synp.ConnManager
 	connHandler synp.Handler
 
-	consumers map[string]gateway.Consumer
+	consumers map[string]*gateway.Consumer
 
 	connLimiter *limiter.TokenLimiter
 	backoff     *backoff.ExponentialBackOff
@@ -91,9 +91,6 @@ func (s *Server) Start() error {
 			}
 		}
 	}
-
-	// 阻塞并等待关闭。
-	<-s.ctx.Done()
 
 	return nil
 }
@@ -337,6 +334,7 @@ func NewServer(
 	upgrader synp.Upgrader,
 	connManager synp.ConnManager,
 	connHandler synp.Handler,
+	consumers map[string]*gateway.Consumer,
 	logger *zap.Logger,
 	opts ...option.Opt[Server],
 ) *Server {
@@ -350,6 +348,8 @@ func NewServer(
 
 		connLimiter: limiter.NewTokenLimiter(limiter.DefaultConfig()), // 默认令牌桶限流器。
 		backoff:     backoff.NewExponentialBackOff(),                  // 默认退避策略。
+
+		consumers: consumers,
 
 		ctx:        ctx,
 		cancelFunc: cancel,

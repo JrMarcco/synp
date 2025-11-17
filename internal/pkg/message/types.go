@@ -2,11 +2,12 @@ package message
 
 import (
 	"errors"
+	"fmt"
+	"log/slog"
 
 	"github.com/JrMarcco/synp"
 	messagev1 "github.com/JrMarcco/synp-api/api/go/message/v1"
 	"github.com/JrMarcco/synp/internal/pkg/codec"
-	"go.uber.org/zap"
 )
 
 var ErrMarshalMessage = errors.New("failed to marshal message")
@@ -18,30 +19,29 @@ type PushFunc func(conn synp.Conn, msg *messagev1.Message) error
 //
 // 参数：
 //   - codec: 消息编解码器
-//   - logger: 日志记录器
 //
 // 返回：
 //   - retransmit.TaskFunc: 可用于发送消息和重传的函数
-func DefaultPushFunc(codec codec.Codec, logger *zap.Logger) PushFunc {
+func DefaultPushFunc(codec codec.Codec) PushFunc {
 	return func(conn synp.Conn, msg *messagev1.Message) error {
 		payload, err := codec.Marshal(msg)
 		if err != nil {
-			logger.Error(
-				"[synp] failed to marshal message",
-				zap.String("codec_name", codec.Name()),
-				zap.String("message", msg.String()),
-				zap.Error(err),
+			slog.Error(
+				"[synp-message] failed to marshal message",
+				"codec_name", codec.Name(),
+				"message", msg.String(),
+				"error", err,
 			)
-			return err
+			return fmt.Errorf("failed to marshal message: %w", err)
 		}
 
 		if err = conn.Send(payload); err != nil {
-			logger.Error(
-				"[synp] failed to send message",
-				zap.String("connection_id", conn.ID()),
-				zap.Error(err),
+			slog.Error(
+				"[synp-message] failed to send message",
+				"conn_id", conn.ID(),
+				"error", err,
 			)
-			return err
+			return fmt.Errorf("failed to send message: %w", err)
 		}
 		return nil
 	}

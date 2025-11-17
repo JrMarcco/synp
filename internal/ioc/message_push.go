@@ -4,18 +4,16 @@ import (
 	"github.com/JrMarcco/synp/internal/pkg/codec"
 	"github.com/JrMarcco/synp/internal/pkg/message"
 	"go.uber.org/fx"
-	"go.uber.org/zap"
 )
 
-var MessagePushFxOpt = fx.Module("message_push", fx.Provide(InitMessagePushFunc))
+var MessagePushFxOpt = fx.Module("message_push", fx.Provide(initMessagePushFunc))
 
 type messagePushFuncFxParams struct {
 	fx.In
 
-	Codec  codec.Codec
-	Logger *zap.Logger
+	Codec codec.Codec
 }
 
-func InitMessagePushFunc(params messagePushFuncFxParams) message.PushFunc {
-	return message.DefaultPushFunc(params.Codec, params.Logger)
+func initMessagePushFunc(params messagePushFuncFxParams) message.PushFunc {
+	return message.DefaultPushFunc(params.Codec)
 }
