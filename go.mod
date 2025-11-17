@@ -6,7 +6,6 @@ require (
 	github.com/JrMarcco/jit v0.0.2
 	github.com/JrMarcco/synp-api v0.0.3
 	github.com/cenkalti/backoff/v5 v5.0.3
-	github.com/go-redis/redis v6.15.9+incompatible
 	github.com/gobwas/httphead v0.1.0
 	github.com/gobwas/ws v1.4.0
 	github.com/redis/go-redis/v9 v9.16.0
@@ -38,8 +37,6 @@ require (
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.27.3 // indirect
 	github.com/klauspost/compress v1.18.1 // indirect
-	github.com/onsi/ginkgo v1.16.5 // indirect
-	github.com/onsi/gomega v1.38.2 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.4 // indirect
 	github.com/pierrec/lz4/v4 v4.1.22 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
