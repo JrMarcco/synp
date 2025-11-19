@@ -74,7 +74,6 @@ func (u *Upgrader) Upgrade(conn net.Conn) (session.Session, *compression.State, 
 			// 解析 auto close 参数。
 			if strings.EqualFold(string(key), "x-auto-close") {
 				autoClose = string(value) == "true"
-
 				u.logger.Warn(
 					"[synp-upgrader] auto close parameter parsed",
 					zap.String("header_key", string(key)),

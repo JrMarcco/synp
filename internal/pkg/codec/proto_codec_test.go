@@ -1,9 +1,8 @@
-package codec_test
+package codec
 
 import (
 	"testing"
 
-	"github.com/JrMarcco/synp/internal/pkg/codec"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
@@ -11,7 +10,7 @@ import (
 func TestProtoCodec(t *testing.T) {
 	t.Parallel()
 
-	protoCodec := codec.NewProtoCodec()
+	protoCodec := NewProtoCodec()
 	assert.Equal(t, "proto", protoCodec.Name())
 
 	suite.Run(t, &CodecSuite{codec: protoCodec})

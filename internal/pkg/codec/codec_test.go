@@ -1,9 +1,8 @@
-package codec_test
+package codec
 
 import (
 	commonv1 "github.com/JrMarcco/synp-api/api/go/common/v1"
 	messagev1 "github.com/JrMarcco/synp-api/api/go/message/v1"
-	"github.com/JrMarcco/synp/internal/pkg/codec"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -13,7 +12,7 @@ import (
 
 type CodecSuite struct {
 	suite.Suite
-	codec codec.Codec
+	codec Codec
 }
 
 func (c *CodecSuite) TestNormalMessage() {

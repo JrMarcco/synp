@@ -1,9 +1,8 @@
-package codec_test
+package codec
 
 import (
 	"testing"
 
-	"github.com/JrMarcco/synp/internal/pkg/codec"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
@@ -11,7 +10,7 @@ import (
 func TestJsonCodec(t *testing.T) {
 	t.Parallel()
 
-	jsonCodec := codec.NewJSONCodec()
+	jsonCodec := NewJSONCodec()
 	assert.Equal(t, "json", jsonCodec.Name())
 
 	suite.Run(t, &CodecSuite{codec: jsonCodec})
