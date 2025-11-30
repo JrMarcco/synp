@@ -13,7 +13,7 @@ import (
 
 var ErrRateLimited = errors.New("request too frequently, please try again later")
 
-//go:generate mockgen -source=./types.go -destination=./mock/synp.mock.go -package=synpmock -typed
+//go:generate mockgen -source=types.go -destination=mock/synp.mock.go -package=synpmock -typed
 
 type Server interface {
 	Start() error

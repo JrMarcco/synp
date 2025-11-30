@@ -5,7 +5,7 @@ import (
 	messagev1 "github.com/JrMarcco/synp-api/api/go/message/v1"
 )
 
-//go:generate mockgen -source=./types.go -destination=./mock/downstream.mock.go -package=downstreammock -typed Handler
+//go:generate mockgen -source=types.go -destination=mock/downstream.mock.go -package=downstreammock -typed Handler
 
 // DMsgHandler 是 downstream 消息处理器的接口。
 type DMsgHandler interface {

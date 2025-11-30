@@ -1,6 +1,6 @@
 package codec
 
-//go:generate mockgen -source=./codec.go -destination=./mock/codec.mock.go -package=codecmock -typed Codec
+//go:generate mockgen -source=codec.go -destination=mock/codec.mock.go -package=codecmock -typed Codec
 
 // Codec 是消息编码/解码接口。
 // 注:

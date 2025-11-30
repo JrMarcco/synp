@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-//go:generate mockgen -source=./types.go -destination=./mock/session.mock.go -package=sessionmock -typed Session
+//go:generate mockgen -source=types.go -destination=mock/session.mock.go -package=sessionmock -typed Session
 
 type Session interface {
 	User() User

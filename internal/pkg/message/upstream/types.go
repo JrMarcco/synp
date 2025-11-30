@@ -6,7 +6,7 @@ import (
 	messagev1 "github.com/JrMarcco/synp-api/api/go/message/v1"
 )
 
-//go:generate mockgen -source=./types.go -destination=./mock/upstream.mock.go -package=upstreammock -typed Handler
+//go:generate mockgen -source=types.go -destination=mock/upstream.mock.go -package=upstreammock -typed Handler
 
 // UMsgHandler 是 upstream 消息处理器的接口。
 type UMsgHandler interface {
