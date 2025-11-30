@@ -128,10 +128,6 @@ kafka:
 
 jwt:
   issuer: "synp-jwt"
-  private: |
-    -----BEGIN PRIVATE KEY-----
-    MC4CAQAwBQYDK2VwBCIEINuchwbkYeYD/jnGLyPjRAufQGP+WUckh+PK6U4u7fk1
-    -----END PRIVATE KEY-----
   public: |
     -----BEGIN PUBLIC KEY-----
     MCowBQYDK2VwAyEA818wiIDR2aqxvLKcyQL2qvVCYlSs2A/izQi/K109rlU=
