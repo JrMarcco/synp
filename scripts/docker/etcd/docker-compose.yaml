@@ -9,7 +9,7 @@ services:
     environment:
       # Basic settings
       - ALLOW_NONE_AUTHENTICATION=no
-      - ETCD_NAME=node-1
+      - ETCD_NAME=etcd-1
       - ETCD_ROOT_PASSWORD=${ETCD_ROOT_PASSWORD}
       # Data directory
       - ETCD_DATA_DIR=/opt/bitnami/etcd/data
@@ -33,7 +33,7 @@ services:
       - ETCD_INITIAL_ADVERTISE_PEER_URLS=https://node-1:2380
       # ===== 集群配置 =====
       - ETCD_INITIAL_CLUSTER_TOKEN=synp-etcd-cluster
-      - ETCD_INITIAL_CLUSTER=node-1=https://node-1:2380,node-2=https://node-2:2380,node-3=https://node-3:2380
+      - ETCD_INITIAL_CLUSTER=etcd-1=https://node-1:2380,etcd-2=https://node-2:2380,etcd-3=https://node-3:2380
       - ETCD_INITIAL_CLUSTER_STATE=new
       # ===== 安全增强配置 =====
       - ETCD_CIPHER_SUITES=TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256
@@ -53,7 +53,7 @@ services:
     environment:
       # Basic settings
       - ALLOW_NONE_AUTHENTICATION=no
-      - ETCD_NAME=node-2
+      - ETCD_NAME=etcd-2
       - ETCD_ROOT_PASSWORD=${ETCD_ROOT_PASSWORD}
       # Data directory
       - ETCD_DATA_DIR=/opt/bitnami/etcd/data
@@ -77,7 +77,7 @@ services:
       - ETCD_INITIAL_ADVERTISE_PEER_URLS=https://node-2:2380
       # ===== 集群配置 =====
       - ETCD_INITIAL_CLUSTER_TOKEN=synp-etcd-cluster
-      - ETCD_INITIAL_CLUSTER=node-1=https://node-1:2380,node-2=https://node-2:2380,node-3=https://node-3:2380
+      - ETCD_INITIAL_CLUSTER=etcd-1=https://node-1:2380,etcd-2=https://node-2:2380,etcd-3=https://node-3:2380
       - ETCD_INITIAL_CLUSTER_STATE=new
       # ===== 安全增强配置 =====
       - ETCD_CIPHER_SUITES=TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256
@@ -97,7 +97,7 @@ services:
     environment:
       # Basic settings
       - ALLOW_NONE_AUTHENTICATION=no
-      - ETCD_NAME=node-3
+      - ETCD_NAME=etcd-3
       - ETCD_ROOT_PASSWORD=${ETCD_ROOT_PASSWORD}
       # Data directory
       - ETCD_DATA_DIR=/opt/bitnami/etcd/data
@@ -121,7 +121,7 @@ services:
       - ETCD_INITIAL_ADVERTISE_PEER_URLS=https://node-3:2380
       # ===== 集群配置 =====
       - ETCD_INITIAL_CLUSTER_TOKEN=synp-etcd-cluster
-      - ETCD_INITIAL_CLUSTER=node-1=https://node-1:2380,node-2=https://node-2:2380,node-3=https://node-3:2380
+      - ETCD_INITIAL_CLUSTER=etcd-1=https://node-1:2380,etcd-2=https://node-2:2380,etcd-3=https://node-3:2380
       - ETCD_INITIAL_CLUSTER_STATE=new
       # ===== 安全增强配置 =====
       - ETCD_CIPHER_SUITES=TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256
