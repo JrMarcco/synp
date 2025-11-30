@@ -1,6 +1,6 @@
-name: synp
+name: synp-etcd
 services:
-  etcd-1:
+  node-1:
     image: bitnami/etcd:latest
     restart: unless-stopped
     ports:
@@ -9,7 +9,7 @@ services:
     environment:
       # Basic settings
       - ALLOW_NONE_AUTHENTICATION=no
-      - ETCD_NAME=etcd-1
+      - ETCD_NAME=node-1
       - ETCD_ROOT_PASSWORD=${ETCD_ROOT_PASSWORD}
       # Data directory
       - ETCD_DATA_DIR=/opt/bitnami/etcd/data
@@ -21,7 +21,7 @@ services:
       - ETCD_AUTO_TLS=false
       # 只监听 HTTPS 端口，禁用 HTTP
       - ETCD_LISTEN_CLIENT_URLS=https://0.0.0.0:2379
-      - ETCD_ADVERTISE_CLIENT_URLS=https://etcd-1:2379
+      - ETCD_ADVERTISE_CLIENT_URLS=https://node-1:2379
       # ===== 强制 TLS 对等连接配置 =====
       - ETCD_PEER_CERT_FILE=/opt/bitnami/etcd/certs/server.pem
       - ETCD_PEER_KEY_FILE=/opt/bitnami/etcd/certs/server-key.pem
@@ -30,10 +30,10 @@ services:
       - ETCD_PEER_AUTO_TLS=false
       # 只监听 HTTPS 对等端口，禁用 HTTP
       - ETCD_LISTEN_PEER_URLS=https://0.0.0.0:2380
-      - ETCD_INITIAL_ADVERTISE_PEER_URLS=https://etcd-1:2380
+      - ETCD_INITIAL_ADVERTISE_PEER_URLS=https://node-1:2380
       # ===== 集群配置 =====
       - ETCD_INITIAL_CLUSTER_TOKEN=synp-etcd-cluster
-      - ETCD_INITIAL_CLUSTER=etcd-1=https://etcd-1:2380,etcd-2=https://etcd-2:2380,etcd-3=https://etcd-3:2380
+      - ETCD_INITIAL_CLUSTER=node-1=https://node-1:2380,node-2=https://node-2:2380,node-3=https://node-3:2380
       - ETCD_INITIAL_CLUSTER_STATE=new
       # ===== 安全增强配置 =====
       - ETCD_CIPHER_SUITES=TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256
@@ -44,7 +44,7 @@ services:
     networks:
       - synp-network
 
-  etcd-2:
+  node-2:
     image: bitnami/etcd:latest
     restart: unless-stopped
     ports:
@@ -53,7 +53,7 @@ services:
     environment:
       # Basic settings
       - ALLOW_NONE_AUTHENTICATION=no
-      - ETCD_NAME=etcd-2
+      - ETCD_NAME=node-2
       - ETCD_ROOT_PASSWORD=${ETCD_ROOT_PASSWORD}
       # Data directory
       - ETCD_DATA_DIR=/opt/bitnami/etcd/data
@@ -65,7 +65,7 @@ services:
       - ETCD_AUTO_TLS=false
       # 只监听 HTTPS 端口，禁用 HTTP
       - ETCD_LISTEN_CLIENT_URLS=https://0.0.0.0:2379
-      - ETCD_ADVERTISE_CLIENT_URLS=https://etcd-2:2379
+      - ETCD_ADVERTISE_CLIENT_URLS=https://node-2:2379
       # ===== 强制 TLS 对等连接配置 =====
       - ETCD_PEER_CERT_FILE=/opt/bitnami/etcd/certs/server.pem
       - ETCD_PEER_KEY_FILE=/opt/bitnami/etcd/certs/server-key.pem
@@ -74,10 +74,10 @@ services:
       - ETCD_PEER_AUTO_TLS=false
       # 只监听 HTTPS 对等端口，禁用 HTTP
       - ETCD_LISTEN_PEER_URLS=https://0.0.0.0:2380
-      - ETCD_INITIAL_ADVERTISE_PEER_URLS=https://etcd-2:2380
+      - ETCD_INITIAL_ADVERTISE_PEER_URLS=https://node-2:2380
       # ===== 集群配置 =====
       - ETCD_INITIAL_CLUSTER_TOKEN=synp-etcd-cluster
-      - ETCD_INITIAL_CLUSTER=etcd-1=https://etcd-1:2380,etcd-2=https://etcd-2:2380,etcd-3=https://etcd-3:2380
+      - ETCD_INITIAL_CLUSTER=node-1=https://node-1:2380,node-2=https://node-2:2380,node-3=https://node-3:2380
       - ETCD_INITIAL_CLUSTER_STATE=new
       # ===== 安全增强配置 =====
       - ETCD_CIPHER_SUITES=TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256
@@ -88,7 +88,7 @@ services:
     networks:
       - synp-network
 
-  etcd-3:
+  node-3:
     image: bitnami/etcd:latest
     restart: unless-stopped
     ports:
@@ -97,7 +97,7 @@ services:
     environment:
       # Basic settings
       - ALLOW_NONE_AUTHENTICATION=no
-      - ETCD_NAME=etcd-3
+      - ETCD_NAME=node-3
       - ETCD_ROOT_PASSWORD=${ETCD_ROOT_PASSWORD}
       # Data directory
       - ETCD_DATA_DIR=/opt/bitnami/etcd/data
@@ -109,7 +109,7 @@ services:
       - ETCD_AUTO_TLS=false
       # 只监听 HTTPS 端口，禁用 HTTP
       - ETCD_LISTEN_CLIENT_URLS=https://0.0.0.0:2379
-      - ETCD_ADVERTISE_CLIENT_URLS=https://etcd-3:2379
+      - ETCD_ADVERTISE_CLIENT_URLS=https://node-3:2379
       # ===== 强制 TLS 对等连接配置 =====
       - ETCD_PEER_CERT_FILE=/opt/bitnami/etcd/certs/server.pem
       - ETCD_PEER_KEY_FILE=/opt/bitnami/etcd/certs/server-key.pem
@@ -118,10 +118,10 @@ services:
       - ETCD_PEER_AUTO_TLS=false
       # 只监听 HTTPS 对等端口，禁用 HTTP
       - ETCD_LISTEN_PEER_URLS=https://0.0.0.0:2380
-      - ETCD_INITIAL_ADVERTISE_PEER_URLS=https://etcd-3:2380
+      - ETCD_INITIAL_ADVERTISE_PEER_URLS=https://node-3:2380
       # ===== 集群配置 =====
       - ETCD_INITIAL_CLUSTER_TOKEN=synp-etcd-cluster
-      - ETCD_INITIAL_CLUSTER=etcd-1=https://etcd-1:2380,etcd-2=https://etcd-2:2380,etcd-3=https://etcd-3:2380
+      - ETCD_INITIAL_CLUSTER=node-1=https://node-1:2380,node-2=https://node-2:2380,node-3=https://node-3:2380
       - ETCD_INITIAL_CLUSTER_STATE=new
       # ===== 安全增强配置 =====
       - ETCD_CIPHER_SUITES=TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256

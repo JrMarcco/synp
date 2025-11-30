@@ -51,9 +51,9 @@ IP.1 = 127.0.0.1
 IP.2 = ::1
 
 # ===== Docker 容器名称，集群情况下配置多个 =====
-DNS.2 = etcd-1
-DNS.3 = etcd-2
-DNS.4 = etcd-3
+DNS.2 = node-1
+DNS.3 = node-2
+DNS.4 = node-3
 
 # ===== 如果需要外部访问，添加主机名 或 IP =====
 # DNS.5 = etcd.yourdomain.com

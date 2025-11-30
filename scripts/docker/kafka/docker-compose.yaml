@@ -1,6 +1,6 @@
-name: synp
+name: synp-kafka
 services:
-  kafka-1:
+  node-1:
     image: docker.io/bitnami/kafka:latest
     ports:
       - "9092:9092"
@@ -9,7 +9,7 @@ services:
       # KRaft 设置
       - KAFKA_ENABLE_KRAFT=yes
       - KAFKA_CFG_PROCESS_ROLES=controller,broker
-      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@kafka-1:9091,2@kafka-2:9091,3@kafka-3:9091
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@node-1:9091,2@node-2:9091,3@node-3:9091
       - KAFKA_CFG_NODE_ID=1
       - KAFKA_KRAFT_CLUSTER_ID=${KAFKA_CLUSTER_ID}
 
@@ -21,7 +21,7 @@ services:
       # Listeners 配置
       - KAFKA_CFG_LISTENERS=INTERNAL://:9094,CLIENT://:9092,CONTROLLER://:9091,EXTERNAL://:9093
       # 注意：EXTERNAL 要配置正确的外部可访问的地址
-      - KAFKA_CFG_ADVERTISED_LISTENERS=INTERNAL://kafka-1:9094,CLIENT://kafka-1:9092,EXTERNAL://192.168.3.3:9093
+      - KAFKA_CFG_ADVERTISED_LISTENERS=INTERNAL://node-1:9094,CLIENT://node-1:9092,EXTERNAL://192.168.3.3:9093
       - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:SSL,INTERNAL:SASL_SSL,CLIENT:SASL_SSL,EXTERNAL:SASL_SSL
 
       # SASL/SCRAM-SHA-256 认证配置
@@ -74,7 +74,7 @@ services:
       retries: 5
       start_period: 30s
 
-  kafka-2:
+  node-2:
     image: docker.io/bitnami/kafka:latest
     ports:
       - "9192:9092"
@@ -83,7 +83,7 @@ services:
       # KRaft 设置
       - KAFKA_ENABLE_KRAFT=yes
       - KAFKA_CFG_PROCESS_ROLES=controller,broker
-      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@kafka-1:9091,2@kafka-2:9091,3@kafka-3:9091
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@node-1:9091,2@node-2:9091,3@node-3:9091
       - KAFKA_CFG_NODE_ID=2
       - KAFKA_KRAFT_CLUSTER_ID=${KAFKA_CLUSTER_ID}
 
@@ -95,7 +95,7 @@ services:
       # Listeners 配置
       - KAFKA_CFG_LISTENERS=INTERNAL://:9094,CLIENT://:9092,CONTROLLER://:9091,EXTERNAL://:9093
       # 注意：EXTERNAL 要配置正确的外部可访问的地址
-      - KAFKA_CFG_ADVERTISED_LISTENERS=INTERNAL://kafka-2:9094,CLIENT://kafka-2:9092,EXTERNAL://192.168.3.3:9193
+      - KAFKA_CFG_ADVERTISED_LISTENERS=INTERNAL://node-2:9094,CLIENT://node-2:9092,EXTERNAL://192.168.3.3:9193
       - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:SSL,INTERNAL:SASL_SSL,CLIENT:SASL_SSL,EXTERNAL:SASL_SSL
 
       # SASL/SCRAM-SHA-256 认证配置
@@ -148,7 +148,7 @@ services:
       retries: 5
       start_period: 30s
 
-  kafka-3:
+  node-3:
     image: docker.io/bitnami/kafka:latest
     ports:
       - "9292:9092"
@@ -157,7 +157,7 @@ services:
       # KRaft 设置
       - KAFKA_ENABLE_KRAFT=yes
       - KAFKA_CFG_PROCESS_ROLES=controller,broker
-      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@kafka-1:9091,2@kafka-2:9091,3@kafka-3:9091
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@node-1:9091,2@node-2:9091,3@node-3:9091
       - KAFKA_CFG_NODE_ID=3
       - KAFKA_KRAFT_CLUSTER_ID=${KAFKA_CLUSTER_ID}
 
@@ -169,7 +169,7 @@ services:
       # Listeners 配置
       - KAFKA_CFG_LISTENERS=INTERNAL://:9094,CLIENT://:9092,CONTROLLER://:9091,EXTERNAL://:9093
       # 注意：EXTERNAL 要配置正确的外部可访问的地址
-      - KAFKA_CFG_ADVERTISED_LISTENERS=INTERNAL://kafka-3:9094,CLIENT://kafka-3:9092,EXTERNAL://192.168.3.3:9293
+      - KAFKA_CFG_ADVERTISED_LISTENERS=INTERNAL://node-3:9094,CLIENT://node-3:9092,EXTERNAL://192.168.3.3:9293
       - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:SSL,INTERNAL:SASL_SSL,CLIENT:SASL_SSL,EXTERNAL:SASL_SSL
 
       # SASL/SCRAM-SHA-256 认证配置
@@ -223,14 +223,14 @@ services:
       start_period: 30s
 
   # ui 管理界面 ( 可选 )
-  kafka-ui:
+  ui:
     image: provectuslabs/kafka-ui:latest
     ports:
       - "18080:8080"
     environment:
       - DYNAMIC_CONFIG_ENABLED=true
       - KAFKA_CLUSTERS_0_NAME=${KAFKA_CLUSTER_ID}
-      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka-1:9092,kafka-2:9092,kafka-3:9092
+      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=node-1:9092,node-2:9092,node-3:9092
 
       # SASL/SCRAM-SHA-256 认证配置
       - KAFKA_CLUSTERS_0_PROPERTIES_SASL_MECHANISM=SCRAM-SHA-256
@@ -250,9 +250,9 @@ services:
     networks:
       - synp-network
     depends_on:
-      - kafka-1
-      - kafka-2
-      - kafka-3
+      - node-1
+      - node-2
+      - node-3
     healthcheck:
       test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:18080/actuator/health || exit 1"]
       interval: 10s
