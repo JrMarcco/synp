@@ -23,8 +23,8 @@ func initValidator() auth.Validator {
 	}
 
 	claimsCfg := xjwt.NewClaimsConfig(xjwt.WithIssuer(cfg.Issuer))
-
-	jwtManager, err := xjwt.NewEd25519ManagerBuilder[session.User](cfg.Private, cfg.Public).
+	// 这里只使用 public key 进行验证，不需要加密。
+	jwtManager, err := xjwt.NewEd25519VerifierBuilder[session.User](cfg.Public).
 		ClaimsConfig(claimsCfg).
 		Build()
 	if err != nil {
