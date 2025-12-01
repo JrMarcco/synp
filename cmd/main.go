@@ -1,11 +1,11 @@
 package main
 
 import (
-	"github.com/JrMarcco/synp/internal/app"
-	"github.com/JrMarcco/synp/internal/pkg/providers"
-	"github.com/JrMarcco/synp/internal/ws"
-	"github.com/JrMarcco/synp/internal/ws/conn"
-	"github.com/JrMarcco/synp/internal/ws/conn/lifecycle"
+	"github.com/jrmarcco/synp/internal/app"
+	"github.com/jrmarcco/synp/internal/pkg/providers"
+	"github.com/jrmarcco/synp/internal/ws"
+	"github.com/jrmarcco/synp/internal/ws/conn"
+	"github.com/jrmarcco/synp/internal/ws/conn/lifecycle"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"go.uber.org/fx"

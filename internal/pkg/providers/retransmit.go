@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/JrMarcco/synp/internal/pkg/message"
-	"github.com/JrMarcco/synp/internal/pkg/retransmit"
+	"github.com/jrmarcco/synp/internal/pkg/message"
+	"github.com/jrmarcco/synp/internal/pkg/retransmit"
 	"github.com/spf13/viper"
 	"go.uber.org/fx"
 )

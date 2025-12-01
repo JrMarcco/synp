@@ -1,8 +1,8 @@
 package downstream
 
 import (
-	"github.com/JrMarcco/synp"
-	messagev1 "github.com/JrMarcco/synp-api/api/go/message/v1"
+	"github.com/jrmarcco/synp"
+	messagev1 "github.com/jrmarcco/synp-api/api/go/message/v1"
 )
 
 //go:generate mockgen -source=types.go -destination=mock/downstream.mock.go -package=downstreammock -typed Handler

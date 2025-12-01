@@ -3,7 +3,7 @@ package providers
 import (
 	"fmt"
 
-	"github.com/JrMarcco/synp/internal/pkg/codec"
+	"github.com/jrmarcco/synp/internal/pkg/codec"
 	"github.com/spf13/viper"
 )
 

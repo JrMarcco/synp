@@ -1,9 +1,9 @@
 package upstream
 
 import (
-	"github.com/JrMarcco/synp"
-	commonv1 "github.com/JrMarcco/synp-api/api/go/common/v1"
-	messagev1 "github.com/JrMarcco/synp-api/api/go/message/v1"
+	"github.com/jrmarcco/synp"
+	commonv1 "github.com/jrmarcco/synp-api/api/go/common/v1"
+	messagev1 "github.com/jrmarcco/synp-api/api/go/message/v1"
 )
 
 //go:generate mockgen -source=types.go -destination=mock/upstream.mock.go -package=upstreammock -typed Handler

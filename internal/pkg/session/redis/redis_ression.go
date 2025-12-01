@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/JrMarcco/synp/internal/pkg/session"
+	"github.com/jrmarcco/synp/internal/pkg/session"
 	"github.com/redis/go-redis/v9"
 )
 

@@ -3,10 +3,10 @@ package upstream
 import (
 	"log/slog"
 
-	"github.com/JrMarcco/synp"
-	commonv1 "github.com/JrMarcco/synp-api/api/go/common/v1"
-	messagev1 "github.com/JrMarcco/synp-api/api/go/message/v1"
-	"github.com/JrMarcco/synp/internal/pkg/retransmit"
+	"github.com/jrmarcco/synp"
+	commonv1 "github.com/jrmarcco/synp-api/api/go/common/v1"
+	messagev1 "github.com/jrmarcco/synp-api/api/go/message/v1"
+	"github.com/jrmarcco/synp/internal/pkg/retransmit"
 )
 
 var _ UMsgHandler = (*DownstreamAckHandler)(nil)

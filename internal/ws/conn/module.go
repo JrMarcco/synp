@@ -3,7 +3,7 @@ package conn
 import (
 	"time"
 
-	"github.com/JrMarcco/synp"
+	"github.com/jrmarcco/synp"
 	"github.com/spf13/viper"
 	"go.uber.org/fx"
 	"go.uber.org/zap"

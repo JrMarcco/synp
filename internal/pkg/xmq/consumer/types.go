@@ -3,7 +3,7 @@ package consumer
 import (
 	"context"
 
-	"github.com/JrMarcco/synp/internal/pkg/xmq"
+	"github.com/jrmarcco/synp/internal/pkg/xmq"
 )
 
 // ConsumerFactory 是创建消费者的工厂函数。

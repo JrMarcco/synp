@@ -4,7 +4,7 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/JrMarcco/synp/internal/pkg/xmq"
+	"github.com/jrmarcco/synp/internal/pkg/xmq"
 	"github.com/segmentio/kafka-go"
 )
 

@@ -3,9 +3,9 @@ package app
 import (
 	"context"
 
-	"github.com/JrMarcco/synp"
-	"github.com/JrMarcco/synp/internal/ws"
-	"github.com/JrMarcco/synp/internal/ws/gateway"
+	"github.com/jrmarcco/synp"
+	"github.com/jrmarcco/synp/internal/ws"
+	"github.com/jrmarcco/synp/internal/ws/gateway"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 )

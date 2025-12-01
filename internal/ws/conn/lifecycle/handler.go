@@ -6,12 +6,12 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/JrMarcco/synp"
-	commonv1 "github.com/JrMarcco/synp-api/api/go/common/v1"
-	messagev1 "github.com/JrMarcco/synp-api/api/go/message/v1"
-	"github.com/JrMarcco/synp/internal/pkg/codec"
-	"github.com/JrMarcco/synp/internal/pkg/message/downstream"
-	"github.com/JrMarcco/synp/internal/pkg/message/upstream"
+	"github.com/jrmarcco/synp"
+	commonv1 "github.com/jrmarcco/synp-api/api/go/common/v1"
+	messagev1 "github.com/jrmarcco/synp-api/api/go/message/v1"
+	"github.com/jrmarcco/synp/internal/pkg/codec"
+	"github.com/jrmarcco/synp/internal/pkg/message/downstream"
+	"github.com/jrmarcco/synp/internal/pkg/message/upstream"
 	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 )

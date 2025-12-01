@@ -9,15 +9,15 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/JrMarcco/jit/bean/option"
-	"github.com/JrMarcco/synp"
-	messagev1 "github.com/JrMarcco/synp-api/api/go/message/v1"
-	"github.com/JrMarcco/synp/internal/pkg/limiter"
-	"github.com/JrMarcco/synp/internal/pkg/session"
-	"github.com/JrMarcco/synp/internal/pkg/xmq"
-	wsc "github.com/JrMarcco/synp/internal/ws/conn"
-	"github.com/JrMarcco/synp/internal/ws/gateway"
 	"github.com/cenkalti/backoff/v5"
+	"github.com/jrmarcco/jit/bean/option"
+	"github.com/jrmarcco/synp"
+	messagev1 "github.com/jrmarcco/synp-api/api/go/message/v1"
+	"github.com/jrmarcco/synp/internal/pkg/limiter"
+	"github.com/jrmarcco/synp/internal/pkg/session"
+	"github.com/jrmarcco/synp/internal/pkg/xmq"
+	wsc "github.com/jrmarcco/synp/internal/ws/conn"
+	"github.com/jrmarcco/synp/internal/ws/gateway"
 	"go.uber.org/zap"
 )
 

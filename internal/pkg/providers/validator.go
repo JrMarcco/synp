@@ -1,9 +1,9 @@
 package providers
 
 import (
-	"github.com/JrMarcco/jit/xjwt"
-	"github.com/JrMarcco/synp/internal/pkg/auth"
-	"github.com/JrMarcco/synp/internal/pkg/session"
+	"github.com/jrmarcco/jit/xjwt"
+	"github.com/jrmarcco/synp/internal/pkg/auth"
+	"github.com/jrmarcco/synp/internal/pkg/session"
 	"github.com/spf13/viper"
 )
 

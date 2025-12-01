@@ -3,7 +3,7 @@ package auth
 import (
 	"context"
 
-	"github.com/JrMarcco/synp/internal/pkg/session"
+	"github.com/jrmarcco/synp/internal/pkg/session"
 )
 
 //go:generate mockgen -source=types.go -destination=mock/validator.mock.go -package=authmock -typed Validator

@@ -3,10 +3,10 @@ package lifecycle
 import (
 	"time"
 
-	"github.com/JrMarcco/synp"
-	"github.com/JrMarcco/synp/internal/pkg/codec"
-	"github.com/JrMarcco/synp/internal/pkg/message/downstream"
-	"github.com/JrMarcco/synp/internal/pkg/message/upstream"
+	"github.com/jrmarcco/synp"
+	"github.com/jrmarcco/synp/internal/pkg/codec"
+	"github.com/jrmarcco/synp/internal/pkg/message/downstream"
+	"github.com/jrmarcco/synp/internal/pkg/message/upstream"
 	"github.com/redis/go-redis/v9"
 	"github.com/spf13/viper"
 	"go.uber.org/fx"

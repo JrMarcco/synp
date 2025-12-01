@@ -1,8 +1,8 @@
 package codec
 
 import (
-	commonv1 "github.com/JrMarcco/synp-api/api/go/common/v1"
-	messagev1 "github.com/JrMarcco/synp-api/api/go/message/v1"
+	commonv1 "github.com/jrmarcco/synp-api/api/go/common/v1"
+	messagev1 "github.com/jrmarcco/synp-api/api/go/message/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"google.golang.org/protobuf/encoding/protojson"

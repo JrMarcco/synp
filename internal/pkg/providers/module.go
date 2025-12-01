@@ -1,12 +1,12 @@
 package providers
 
 import (
-	"github.com/JrMarcco/synp/internal/pkg/auth"
-	"github.com/JrMarcco/synp/internal/pkg/message"
-	"github.com/JrMarcco/synp/internal/pkg/message/downstream"
-	"github.com/JrMarcco/synp/internal/pkg/message/upstream"
-	pkgconsumer "github.com/JrMarcco/synp/internal/pkg/xmq/consumer"
-	"github.com/JrMarcco/synp/internal/pkg/xmq/produce"
+	"github.com/jrmarcco/synp/internal/pkg/auth"
+	"github.com/jrmarcco/synp/internal/pkg/message"
+	"github.com/jrmarcco/synp/internal/pkg/message/downstream"
+	"github.com/jrmarcco/synp/internal/pkg/message/upstream"
+	pkgconsumer "github.com/jrmarcco/synp/internal/pkg/xmq/consumer"
+	"github.com/jrmarcco/synp/internal/pkg/xmq/produce"
 	"go.uber.org/fx"
 )
 
@@ -24,7 +24,7 @@ var (
 		"kafka-producer",
 		fx.Provide(
 			fx.Annotate(
-				newKafkaProducer,
+				produce.NewKafkaProducer,
 				fx.As(new(produce.Producer)),
 			),
 		),

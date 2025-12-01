@@ -6,10 +6,10 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/JrMarcco/jit/xsync"
-	"github.com/JrMarcco/synp"
-	messagev1 "github.com/JrMarcco/synp-api/api/go/message/v1"
-	"github.com/JrMarcco/synp/internal/pkg/message"
+	"github.com/jrmarcco/jit/xsync"
+	"github.com/jrmarcco/synp"
+	messagev1 "github.com/jrmarcco/synp-api/api/go/message/v1"
+	"github.com/jrmarcco/synp/internal/pkg/message"
 )
 
 const (

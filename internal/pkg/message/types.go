@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/JrMarcco/synp"
-	messagev1 "github.com/JrMarcco/synp-api/api/go/message/v1"
-	"github.com/JrMarcco/synp/internal/pkg/codec"
+	"github.com/jrmarcco/synp"
+	messagev1 "github.com/jrmarcco/synp-api/api/go/message/v1"
+	"github.com/jrmarcco/synp/internal/pkg/codec"
 )
 
 var ErrMarshalMessage = errors.New("failed to marshal message")

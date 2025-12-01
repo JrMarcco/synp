@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/JrMarcco/synp/internal/pkg/xmq/consumer"
+	"github.com/jrmarcco/synp/internal/pkg/xmq/consumer"
 	"github.com/segmentio/kafka-go"
 	"github.com/segmentio/kafka-go/sasl"
 	"github.com/segmentio/kafka-go/sasl/scram"

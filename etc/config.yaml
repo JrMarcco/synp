@@ -127,9 +127,8 @@ kafka:
     # password: "${KAFKA_PASSWORD}"
 
 jwt:
-  issuer: "synp-jwt"
+  issuer: "hermet-access"
   public: |
     -----BEGIN PUBLIC KEY-----
     MCowBQYDK2VwAyEA818wiIDR2aqxvLKcyQL2qvVCYlSs2A/izQi/K109rlU=
     -----END PUBLIC KEY-----
-

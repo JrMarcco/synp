@@ -6,13 +6,13 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/JrMarcco/synp"
-	commonv1 "github.com/JrMarcco/synp-api/api/go/common/v1"
-	messagev1 "github.com/JrMarcco/synp-api/api/go/message/v1"
-	"github.com/JrMarcco/synp/internal/pkg/codec"
-	"github.com/JrMarcco/synp/internal/pkg/message"
-	"github.com/JrMarcco/synp/internal/pkg/xmq"
-	"github.com/JrMarcco/synp/internal/pkg/xmq/produce"
+	"github.com/jrmarcco/synp"
+	commonv1 "github.com/jrmarcco/synp-api/api/go/common/v1"
+	messagev1 "github.com/jrmarcco/synp-api/api/go/message/v1"
+	"github.com/jrmarcco/synp/internal/pkg/codec"
+	"github.com/jrmarcco/synp/internal/pkg/message"
+	"github.com/jrmarcco/synp/internal/pkg/xmq"
+	"github.com/jrmarcco/synp/internal/pkg/xmq/produce"
 	"google.golang.org/protobuf/encoding/protojson"
 )
 

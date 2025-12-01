@@ -5,9 +5,9 @@ import (
 	"errors"
 	"net"
 
-	messagev1 "github.com/JrMarcco/synp-api/api/go/message/v1"
-	"github.com/JrMarcco/synp/internal/pkg/compression"
-	"github.com/JrMarcco/synp/internal/pkg/session"
+	messagev1 "github.com/jrmarcco/synp-api/api/go/message/v1"
+	"github.com/jrmarcco/synp/internal/pkg/compression"
+	"github.com/jrmarcco/synp/internal/pkg/session"
 	"go.uber.org/multierr"
 )
 

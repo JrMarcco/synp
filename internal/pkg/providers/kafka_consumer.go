@@ -1,8 +1,8 @@
 package providers
 
 import (
-	pkgconsumer "github.com/JrMarcco/synp/internal/pkg/xmq/consumer"
-	"github.com/JrMarcco/synp/internal/ws/gateway"
+	pkgconsumer "github.com/jrmarcco/synp/internal/pkg/xmq/consumer"
+	"github.com/jrmarcco/synp/internal/ws/gateway"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 )

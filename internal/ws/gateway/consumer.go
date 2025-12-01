@@ -3,8 +3,8 @@ package gateway
 import (
 	"context"
 
-	"github.com/JrMarcco/synp/internal/pkg/xmq"
-	pkgconsumer "github.com/JrMarcco/synp/internal/pkg/xmq/consumer"
+	"github.com/jrmarcco/synp/internal/pkg/xmq"
+	pkgconsumer "github.com/jrmarcco/synp/internal/pkg/xmq/consumer"
 	"go.uber.org/zap"
 )
 

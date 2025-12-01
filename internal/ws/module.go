@@ -1,9 +1,9 @@
 package ws
 
 import (
-	"github.com/JrMarcco/synp"
-	"github.com/JrMarcco/synp/internal/pkg/auth"
-	"github.com/JrMarcco/synp/internal/pkg/compression"
+	"github.com/jrmarcco/synp"
+	"github.com/jrmarcco/synp/internal/pkg/auth"
+	"github.com/jrmarcco/synp/internal/pkg/compression"
 	"github.com/redis/go-redis/v9"
 	"github.com/spf13/viper"
 	"go.uber.org/fx"

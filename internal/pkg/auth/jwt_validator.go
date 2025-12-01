@@ -3,8 +3,8 @@ package auth
 import (
 	"context"
 
-	"github.com/JrMarcco/jit/xjwt"
-	"github.com/JrMarcco/synp/internal/pkg/session"
+	"github.com/jrmarcco/jit/xjwt"
+	"github.com/jrmarcco/synp/internal/pkg/session"
 )
 
 var _ Validator = (*JwtValidator)(nil)

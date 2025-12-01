@@ -7,11 +7,11 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/JrMarcco/jit/bean/option"
-	"github.com/JrMarcco/jit/xsync"
-	"github.com/JrMarcco/synp"
-	"github.com/JrMarcco/synp/internal/pkg/compression"
-	"github.com/JrMarcco/synp/internal/pkg/session"
+	"github.com/jrmarcco/jit/bean/option"
+	"github.com/jrmarcco/jit/xsync"
+	"github.com/jrmarcco/synp"
+	"github.com/jrmarcco/synp/internal/pkg/compression"
+	"github.com/jrmarcco/synp/internal/pkg/session"
 	"go.uber.org/zap"
 )
 
