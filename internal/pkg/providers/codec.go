@@ -1,31 +1,28 @@
-package ioc
+package providers
 
 import (
 	"fmt"
 
 	"github.com/JrMarcco/synp/internal/pkg/codec"
 	"github.com/spf13/viper"
-	"go.uber.org/fx"
 )
 
-var CodecFxOpt = fx.Module("codec", fx.Provide(initCodec))
-
-func initCodec() codec.Codec {
+func newCodec() (codec.Codec, error) {
 	type config struct {
 		Type string `mapstructure:"type"` // "json" or "proto"
 	}
 
 	cfg := config{}
 	if err := viper.UnmarshalKey("synp.codec", &cfg); err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	switch cfg.Type {
 	case "json":
-		return codec.NewJSONCodec()
+		return codec.NewJSONCodec(), nil
 	case "proto":
-		return codec.NewProtoCodec()
+		return codec.NewProtoCodec(), nil
 	default:
-		panic(fmt.Errorf("unsupported codec type: %s, expected 'json' or 'proto'", cfg.Type))
+		return nil, fmt.Errorf("unsupported codec type: %s, expected 'json' or 'proto'", cfg.Type)
 	}
 }

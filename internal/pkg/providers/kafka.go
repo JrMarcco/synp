@@ -1,4 +1,4 @@
-package ioc
+package providers
 
 import (
 	"context"
@@ -17,8 +17,6 @@ import (
 	"go.uber.org/zap"
 )
 
-var KafkaFxOpt = fx.Module("kafka", fx.Provide(initKafka))
-
 type kafkaFxResult struct {
 	fx.Out
 
@@ -26,26 +24,19 @@ type kafkaFxResult struct {
 	ReaderFactory consumer.KafkaReaderFactory
 }
 
-type kafkaFxParams struct {
-	fx.In
-
-	Logger    *zap.Logger
-	Lifecycle fx.Lifecycle
-}
-
-func initKafka(params kafkaFxParams) kafkaFxResult {
+func newKafkaClient(zapLogger *zap.Logger, lifecycle fx.Lifecycle) (kafkaFxResult, error) {
 	cfg := loadKafkaConfig()
 
 	// 配置 TLS。
-	tlsConfig, err := configureKafkaTLS(cfg.TLS, params.Logger)
+	tlsConfig, err := configureKafkaTLS(cfg.TLS, zapLogger)
 	if err != nil {
-		panic(err)
+		return kafkaFxResult{}, err
 	}
 
 	// 配置 SASL。
-	saslMechanism, err := configureKafkaSasl(cfg.SASL, params.Logger)
+	saslMechanism, err := configureKafkaSasl(cfg.SASL, zapLogger)
 	if err != nil {
-		panic(err)
+		return kafkaFxResult{}, err
 	}
 
 	// 创建 Transport。
@@ -71,7 +62,7 @@ func initKafka(params kafkaFxParams) kafkaFxResult {
 		writer.RequiredAcks = kafka.RequireAll
 	}
 
-	params.Logger.Info(
+	zapLogger.Info(
 		"[synp-ioc-kafka] successfully created kafka writer",
 		zap.Strings("brokers", cfg.Brokers),
 		zap.String("compression", cfg.Producer.Compression),
@@ -105,7 +96,7 @@ func initKafka(params kafkaFxParams) kafkaFxResult {
 			},
 		})
 
-		params.Logger.Info(
+		zapLogger.Info(
 			"[synp-ioc-kafka] created kafka reader",
 			zap.Strings("brokers", cfg.Brokers),
 			zap.String("topic", topic),
@@ -116,13 +107,13 @@ func initKafka(params kafkaFxParams) kafkaFxResult {
 	}
 
 	// 注册生命周期钩子。
-	params.Lifecycle.Append(fx.Hook{
+	lifecycle.Append(fx.Hook{
 		OnStop: func(_ context.Context) error {
 			if err := writer.Close(); err != nil {
-				params.Logger.Error("[synp-ioc-kafka] failed to close kafka writer", zap.Error(err))
+				zapLogger.Error("[synp-ioc-kafka] failed to close kafka writer", zap.Error(err))
 				return fmt.Errorf("failed to close kafka writer: %w", err)
 			}
-			params.Logger.Info("[synp-ioc-kafka] kafka writer closed")
+			zapLogger.Info("[synp-ioc-kafka] kafka writer closed")
 			return nil
 		},
 	})
@@ -130,7 +121,7 @@ func initKafka(params kafkaFxParams) kafkaFxResult {
 	return kafkaFxResult{
 		Writer:        writer,
 		ReaderFactory: readerFactory,
-	}
+	}, nil
 }
 
 type kafkaConfig struct {

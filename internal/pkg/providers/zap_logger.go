@@ -1,4 +1,4 @@
-package ioc
+package providers
 
 import (
 	"context"
@@ -10,22 +10,14 @@ import (
 	"go.uber.org/zap/exp/zapslog"
 )
 
-var LoggerFxOpt = fx.Module("logger", fx.Provide(initLogger))
-
-type loggerFxParams struct {
-	fx.In
-
-	Lifecycle fx.Lifecycle
-}
-
-func initLogger(params loggerFxParams) *zap.Logger {
+func newLogger(lifecycle fx.Lifecycle) (*zap.Logger, error) {
 	type config struct {
 		Env string `mapstructure:"env"`
 	}
 
 	cfg := config{}
-	if err := viper.UnmarshalKey("profile", &cfg); err != nil {
-		panic(err)
+	if err := viper.UnmarshalKey("project", &cfg); err != nil {
+		return nil, err
 	}
 
 	var err error
@@ -39,18 +31,18 @@ func initLogger(params loggerFxParams) *zap.Logger {
 	}
 
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	// 初始化 slog
 	slog.SetDefault(slog.New(zapslog.NewHandler(logger.Core())))
 
-	params.Lifecycle.Append(fx.Hook{
+	lifecycle.Append(fx.Hook{
 		OnStop: func(_ context.Context) error {
 			_ = logger.Sync()
 			return nil
 		},
 	})
 
-	return logger
+	return logger, nil
 }

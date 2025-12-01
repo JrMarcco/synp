@@ -1,4 +1,4 @@
-package ioc
+package app
 
 import (
 	"context"
@@ -10,7 +10,7 @@ import (
 	"go.uber.org/zap"
 )
 
-var AppFxOpt = fx.Module("app", fx.Invoke(initApp))
+var AppFxModule = fx.Module("app", fx.Invoke(initApp))
 
 type app struct {
 	wsSvr synp.Server

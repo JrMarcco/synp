@@ -1,16 +1,13 @@
-package ioc
+package providers
 
 import (
 	"github.com/JrMarcco/jit/xjwt"
 	"github.com/JrMarcco/synp/internal/pkg/auth"
 	"github.com/JrMarcco/synp/internal/pkg/session"
 	"github.com/spf13/viper"
-	"go.uber.org/fx"
 )
 
-var ValidatorFxOpt = fx.Module("validator", fx.Provide(initValidator))
-
-func initValidator() auth.Validator {
+func newValidator() (*auth.JwtValidator, error) {
 	type config struct {
 		Issuer  string `mapstructure:"issuer"`
 		Private string `mapstructure:"private"`
@@ -19,7 +16,7 @@ func initValidator() auth.Validator {
 
 	cfg := config{}
 	if err := viper.UnmarshalKey("jwt", &cfg); err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	claimsCfg := xjwt.NewClaimsConfig(xjwt.WithIssuer(cfg.Issuer))
@@ -28,8 +25,8 @@ func initValidator() auth.Validator {
 		ClaimsConfig(claimsCfg).
 		Build()
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
-	return auth.NewJwtValidator(jwtManager)
+	return auth.NewJwtValidator(jwtManager), nil
 }

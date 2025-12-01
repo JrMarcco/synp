@@ -1,4 +1,4 @@
-package ioc
+package providers
 
 import (
 	"context"
@@ -10,16 +10,7 @@ import (
 	"go.uber.org/fx"
 )
 
-var RetransmitManagerFxOpt = fx.Module("retransmit_manager", fx.Provide(initRetransmitManager))
-
-type retransmitManagerFxParams struct {
-	fx.In
-
-	PushFunc  message.PushFunc
-	Lifecycle fx.Lifecycle
-}
-
-func initRetransmitManager(params retransmitManagerFxParams) *retransmit.Manager {
+func newRetransmitManager(pushFunc message.PushFunc, lifecycle fx.Lifecycle) (*retransmit.Manager, error) {
 	type config struct {
 		Interval int `mapstructure:"interval"`
 		MaxRetry int `mapstructure:"max_retry"`
@@ -27,21 +18,21 @@ func initRetransmitManager(params retransmitManagerFxParams) *retransmit.Manager
 
 	cfg := config{}
 	if err := viper.UnmarshalKey("retransmit", &cfg); err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	manager := retransmit.NewManager(
 		time.Duration(cfg.Interval)*time.Millisecond,
 		int32(cfg.MaxRetry),
-		params.PushFunc,
+		pushFunc,
 	)
 
-	params.Lifecycle.Append(fx.Hook{
+	lifecycle.Append(fx.Hook{
 		OnStop: func(_ context.Context) error {
 			manager.Close()
 			return nil
 		},
 	})
 
-	return manager
+	return manager, nil
 }

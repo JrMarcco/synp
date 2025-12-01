@@ -1,27 +1,26 @@
-package ioc
+package ws
 
 import (
 	"github.com/JrMarcco/synp"
 	"github.com/JrMarcco/synp/internal/pkg/auth"
 	"github.com/JrMarcco/synp/internal/pkg/compression"
-	"github.com/JrMarcco/synp/internal/ws"
 	"github.com/redis/go-redis/v9"
 	"github.com/spf13/viper"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 )
 
-var UpgraderFxOpt = fx.Module("upgrader", fx.Provide(initUpgrader))
+var WsUpgraderFxModule = fx.Module(
+	"ws-upgrader",
+	fx.Provide(
+		fx.Annotate(
+			newWsUpgrader,
+			fx.As(new(synp.Upgrader)),
+		),
+	),
+)
 
-type upgraderFxParams struct {
-	fx.In
-
-	Rdb       redis.Cmdable
-	Validator auth.Validator
-	Logger    *zap.Logger
-}
-
-func initUpgrader(params upgraderFxParams) synp.Upgrader {
+func newWsUpgrader(rdb redis.Cmdable, validator auth.Validator, logger *zap.Logger) (*Upgrader, error) {
 	type config struct {
 		Enabled                 bool `mapstructure:"enabled"`
 		ServerMaxWindowBits     int  `mapstructure:"server_max_window_bits"`
@@ -33,15 +32,15 @@ func initUpgrader(params upgraderFxParams) synp.Upgrader {
 
 	cfg := config{}
 	if err := viper.UnmarshalKey("synp.websocket.compression", &cfg); err != nil {
-		panic(err)
+		return nil, err
 	}
 
-	return ws.NewUpgrader(params.Rdb, params.Validator, compression.Config{
+	return NewUpgrader(rdb, validator, compression.Config{
 		Enabled:                 cfg.Enabled,
 		ServerMaxWindowBits:     cfg.ServerMaxWindowBits,
 		ServerNoContextTakeover: cfg.ServerNoContextTakeover,
 		ClientMaxWindowBits:     cfg.ClientMaxWindowBits,
 		ClientNoContextTakeover: cfg.ClientNoContextTakeover,
 		Level:                   cfg.Level,
-	}, params.Logger)
+	}, logger), nil
 }

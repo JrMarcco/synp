@@ -1,4 +1,4 @@
-package ioc
+package providers
 
 import (
 	"context"
@@ -10,16 +10,7 @@ import (
 	"go.uber.org/zap"
 )
 
-var RedisFxOpt = fx.Module("redis", fx.Provide(initRedis))
-
-type redisFxParams struct {
-	fx.In
-
-	Logger    *zap.Logger
-	Lifecycle fx.Lifecycle
-}
-
-func initRedis(params redisFxParams) redis.Cmdable {
+func newRedisCmdable(zapLogger *zap.Logger, lifecycle fx.Lifecycle) (redis.Cmdable, error) {
 	type config struct {
 		Addr     string `mapstructure:"addr"`
 		Password string `mapstructure:"password"`
@@ -27,7 +18,7 @@ func initRedis(params redisFxParams) redis.Cmdable {
 
 	cfg := config{}
 	if err := viper.UnmarshalKey("redis", &cfg); err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	rdb := redis.NewClient(&redis.Options{
@@ -35,11 +26,11 @@ func initRedis(params redisFxParams) redis.Cmdable {
 		Password: cfg.Password,
 	})
 
-	params.Lifecycle.Append(fx.Hook{
+	lifecycle.Append(fx.Hook{
 		OnStart: func(ctx context.Context) error {
 			// 测试 redis 连接。
 			if err := rdb.Ping(ctx).Err(); err != nil {
-				params.Logger.Error("[synp-ioc-redis] failed to ping redis", zap.Error(err))
+				zapLogger.Error("[synp-ioc-redis] failed to ping redis", zap.Error(err))
 				return fmt.Errorf("failed to ping redis: %w", err)
 			}
 			return nil
@@ -47,14 +38,14 @@ func initRedis(params redisFxParams) redis.Cmdable {
 		OnStop: func(_ context.Context) error {
 			// 关闭 redis 连接。
 			if err := rdb.Close(); err != nil {
-				params.Logger.Error("[synp-ioc-redis] failed to close redis", zap.Error(err))
+				zapLogger.Error("[synp-ioc-redis] failed to close redis", zap.Error(err))
 				return fmt.Errorf("failed to close redis: %w", err)
 			}
 
-			params.Logger.Info("[synp-ioc-redis] redis closed")
+			zapLogger.Info("[synp-ioc-redis] redis closed")
 			return nil
 		},
 	})
 
-	return rdb
+	return rdb, nil
 }

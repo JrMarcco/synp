@@ -1,7 +1,11 @@
 package main
 
 import (
-	"github.com/JrMarcco/synp/internal/ioc"
+	"github.com/JrMarcco/synp/internal/app"
+	"github.com/JrMarcco/synp/internal/pkg/providers"
+	"github.com/JrMarcco/synp/internal/ws"
+	"github.com/JrMarcco/synp/internal/ws/conn"
+	"github.com/JrMarcco/synp/internal/ws/conn/lifecycle"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"go.uber.org/fx"
@@ -18,42 +22,42 @@ func main() {
 		}),
 
 		// 初始化 zap.Logger。
-		ioc.LoggerFxOpt,
-
-		// 初始化 etcd.Client。
-		// ioc.EtcdFxOpt,
+		providers.ZapLoggerFxModule,
 
 		// 初始化 redis.Cmdable。
-		ioc.RedisFxOpt,
+		providers.RedisFxModule,
 
 		// 初始化 kafka。
-		ioc.KafkaFxOpt,
-		ioc.KafkaConsumerFxOpt,
-		ioc.KafkaProducerFxOpt,
+		providers.KafkaFxModule,
+		providers.KafkaConsumerFxModule,
+		providers.KafkaProducerFxModule,
 
 		// 初始化 token validator。
-		ioc.ValidatorFxOpt,
+		providers.ValidatorFxModule,
 
 		// 初始化 codec。
-		ioc.CodecFxOpt,
-
-		// 初始化 upgrader。
-		ioc.UpgraderFxOpt,
+		providers.CodecFxModule,
 
 		// 初始化 message push func。
-		ioc.MessagePushFxOpt,
+		providers.MessagePushFuncFxModule,
 
 		// 初始化 retransmit manager。
-		ioc.RetransmitManagerFxOpt,
+		providers.RetransmitFxModule,
 
 		// 初始化 message handler。
-		ioc.MessageHandlerFxOpt,
+		providers.MessageHandlerFxModule,
 
-		// 初始化 conn handler 和 conn manager。
-		ioc.ConnFxOpt,
+		// 初始化 upgrader。
+		ws.WsUpgraderFxModule,
+
+		// 初始化 conn lifecycle handler 。
+		lifecycle.ConnLcHandlerFxModule,
+
+		// 初始化 conn manager。
+		conn.ConnManagerFxModule,
 
 		// 初始化 app。
-		ioc.AppFxOpt,
+		app.AppFxModule,
 	).Run()
 }
 
