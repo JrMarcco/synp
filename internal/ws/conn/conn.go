@@ -15,6 +15,7 @@ import (
 	"github.com/jrmarcco/synp/internal/pkg/compression"
 	"github.com/jrmarcco/synp/internal/pkg/session"
 	"github.com/jrmarcco/synp/internal/pkg/xws"
+	"go.uber.org/multierr"
 	"go.uber.org/ratelimit"
 	"go.uber.org/zap"
 )
@@ -65,6 +66,7 @@ type Conn struct {
 	cancelFunc context.CancelFunc
 
 	closeOnce sync.Once
+	closeErr  error
 
 	logger *zap.Logger
 }
@@ -107,8 +109,6 @@ func (c *Conn) Closed() <-chan struct{} {
 }
 
 func (c *Conn) Close() error {
-	var err error
-
 	// 注意:
 	//
 	// 不要关闭 c.sendChan，
@@ -121,9 +121,18 @@ func (c *Conn) Close() error {
 		// 取消 context。
 		c.cancelFunc()
 
-		// TODO: 关闭底层连接 ( net.Conn )。
+		// 关闭底层连接 ( net.Conn )。
+		c.closeErr = c.netConn.Close()
+
+		// 销毁 session。
+		ctx, cancel := context.WithTimeout(context.Background(), DefaultCloseTimeout)
+		defer cancel()
+		c.closeErr = multierr.Append(
+			c.closeErr,
+			c.sess.Destroy(ctx),
+		)
 	})
-	return err
+	return c.closeErr
 }
 
 func (c *Conn) sendLoop() {
@@ -243,7 +252,7 @@ func (c *Conn) receiveLoop() {
 			var wsErr wsutil.ClosedError
 			if errors.As(err, &wsErr) && (wsErr.Code == ws.StatusNoStatusRcvd || wsErr.Code == ws.StatusGoingAway) {
 				// 客户端关闭连接，记录日志直接返回。
-				c.logger.Info(
+				c.logger.Debug(
 					"[synp-conn] client closed connection",
 					zap.String("conn_id", c.id),
 					zap.Any("compression_state", c.compressionState),
@@ -371,7 +380,9 @@ func NewConn(
 	c.writer = xws.NewServerSideWriter(netConn, compressionEnabled)
 
 	// 启动收发数据的 goroutine。
+	//nolint:contextcheck // sendLoop 内部使用 c.ctx。
 	go c.sendLoop()
+	//nolint:contextcheck // receiveLoop 内部使用 c.ctx。
 	go c.receiveLoop()
 
 	return c
