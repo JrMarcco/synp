@@ -108,9 +108,20 @@ func (c *Conn) Closed() <-chan struct{} {
 
 func (c *Conn) Close() error {
 	var err error
+
+	// 注意:
+	//
+	// 不要关闭 c.sendChan，
+	// 这会导致 Send 方法中的 c.sendChan <- payload 分支发生 panic：send on closed channel。
 	c.closeOnce.Do(func() {
-		// TODO: not implemented
-		panic("not implemented")
+		// 尝试发送 WebSocket 关闭帧。
+		_ = c.netConn.SetWriteDeadline(time.Now().Add(DefaultCloseTimeout))
+		_ = wsutil.WriteServerMessage(c.netConn, ws.OpClose, []byte{})
+
+		// 取消 context。
+		c.cancelFunc()
+
+		// TODO: 关闭底层连接 ( net.Conn )。
 	})
 	return err
 }
