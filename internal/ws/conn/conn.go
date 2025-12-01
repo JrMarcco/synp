@@ -331,6 +331,7 @@ func NewConn(
 	id string,
 	sess session.Session,
 	netConn net.Conn,
+	logger *zap.Logger,
 	opts ...option.Opt[Conn],
 ) *Conn {
 	ctx, cancel := context.WithCancel(parentCtx)
@@ -354,6 +355,8 @@ func NewConn(
 
 		ctx:        ctx,
 		cancelFunc: cancel,
+
+		logger: logger,
 	}
 
 	option.Apply(c, opts...)

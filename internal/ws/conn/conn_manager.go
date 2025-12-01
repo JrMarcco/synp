@@ -143,7 +143,7 @@ func (m *ConnManager) NewConn(ctx context.Context, netConn net.Conn, sess sessio
 	// 创建新连接
 	connID := user.ConnID()
 	opts := m.convertToConnOpts(user, compressionState)
-	newConn := NewConn(ctx, connID, sess, netConn, opts...)
+	newConn := NewConn(ctx, connID, sess, netConn, m.logger, opts...)
 
 	// 存储连接
 	m.storeConn(connKey, device, newConn)
