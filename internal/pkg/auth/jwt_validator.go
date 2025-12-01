@@ -4,13 +4,14 @@ import (
 	"context"
 
 	"github.com/jrmarcco/jit/xjwt"
+	authv1 "github.com/jrmarcco/synp-api/api/go/auth/v1"
 	"github.com/jrmarcco/synp/internal/pkg/session"
 )
 
 var _ Validator = (*JwtValidator)(nil)
 
 type JwtValidator struct {
-	jwtManager xjwt.Manager[session.User]
+	jwtManager xjwt.Manager[authv1.JwtPayload]
 }
 
 func (v *JwtValidator) Validate(_ context.Context, token string) (session.User, error) {
@@ -18,9 +19,13 @@ func (v *JwtValidator) Validate(_ context.Context, token string) (session.User, 
 	if err != nil {
 		return session.User{}, err
 	}
-	return claims.Data, nil
+
+	return session.User{
+		BID: claims.Data.BizId,
+		UID: claims.Data.UserId,
+	}, nil
 }
 
-func NewJwtValidator(jwtManager xjwt.Manager[session.User]) *JwtValidator {
+func NewJwtValidator(jwtManager xjwt.Manager[authv1.JwtPayload]) *JwtValidator {
 	return &JwtValidator{jwtManager: jwtManager}
 }
