@@ -29,7 +29,7 @@ type connHandlerFxParams struct {
 	Rdb   redis.Cmdable
 	Codec codec.Codec
 
-	UMsgHandlers []upstream.UMsgHandler `group:"upstream_message_handler"`
+	UMsgHandlers []upstream.UMsgHandler `group:"upstream-message-handler"`
 	DMsgHandler  downstream.DMsgHandler
 
 	Logger *zap.Logger

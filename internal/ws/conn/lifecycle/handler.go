@@ -95,7 +95,7 @@ func (h *Handler) OnReceiveFromFrontend(conn synp.Conn, payload []byte) error {
 	}
 
 	h.logger.Info(
-		"[synp-conn-evt-handler] received message from frontend",
+		"[synp-conn-lifecycle-handler] received message from frontend",
 		zap.String("conn_id", conn.ID()),
 		zap.String("message", msg.String()),
 		zap.Any("user", conn.Session().User()),
@@ -105,7 +105,7 @@ func (h *Handler) OnReceiveFromFrontend(conn synp.Conn, payload []byte) error {
 	uMsgHandler, ok := h.uMsgHandlers[msg.GetCmd()]
 	if !ok {
 		h.logger.Error(
-			"[synp-conn-evt-handler] unknown message type from frontend",
+			"[synp-conn-lifecycle-handler] unknown message type from frontend",
 			zap.String("conn_id", conn.ID()),
 			zap.Any("user", conn.Session().User()),
 		)
@@ -118,7 +118,7 @@ func (h *Handler) OnReceiveFromFrontend(conn synp.Conn, payload []byte) error {
 			uncacheErr := h.uncacheMessage(user.BID, msg)
 			if uncacheErr != nil {
 				h.logger.Error(
-					"[synp-conn-evt-handler] failed to uncache message",
+					"[synp-conn-lifecycle-handler] failed to uncache message",
 					zap.String("conn_id", conn.ID()),
 					zap.String("message", msg.String()),
 					zap.Error(uncacheErr),
