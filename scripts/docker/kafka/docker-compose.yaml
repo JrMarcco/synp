@@ -2,17 +2,14 @@ x-kafka-common: &kafka-common
   image: apache/kafka:latest
   restart: unless-stopped
   networks:
-    - kafka_net
+    - jrmarcco_net
   healthcheck:
     test: ["CMD-SHELL", "ps aux | grep -q 'kafka.Kafka' && test -f /var/lib/kafka/data/meta.properties || exit 1"]
     interval: 30s
     timeout: 10s
     retries: 5
-  depends_on:
-    keycloak:
-      condition: service_healthy
   environment: &kafka-common-env
-    # 集群配置 (所有节点共同配置)
+    # 集群配置
     CLUSTER_ID: ${KAFKA_CLUSTER_ID}
     KAFKA_PROCESS_ROLES: broker,controller
     KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka-1:9094,2@kafka-2:9094,3@kafka-3:9094
@@ -45,21 +42,21 @@ x-kafka-common: &kafka-common
     KAFKA_LISTENER_NAME_EXTERNAL_OAUTHBEARER_SASL_LOGIN_CALLBACK_HANDLER_CLASS: org.apache.kafka.common.security.oauthbearer.OAuthBearerLoginCallbackHandler
 
     # OAuth2 JWKS Endpoint 配置 ( Controller 监听器 )
-    KAFKA_LISTENER_NAME_CONTROLLER_OAUTHBEARER_SASL_JAAS_CONFIG: org.apache.kafka.common.security.oauthbearer.OAuthBearerLoginModule required clientId="${KC_CLIENT_ID}" clientSecret="${KC_CLIENT_SECRET}";
+    KAFKA_LISTENER_NAME_CONTROLLER_OAUTHBEARER_SASL_JAAS_CONFIG: org.apache.kafka.common.security.oauthbearer.OAuthBearerLoginModule required clientId="${BROKER_CLIENT_ID}" clientSecret="${BROKER_CLIENT_SECRET}";
     KAFKA_LISTENER_NAME_CONTROLLER_OAUTHBEARER_SASL_OAUTHBEARER_JWKS_ENDPOINT_URL: ${KC_URL}/realms/kafka/protocol/openid-connect/certs
     KAFKA_LISTENER_NAME_CONTROLLER_OAUTHBEARER_SASL_OAUTHBEARER_TOKEN_ENDPOINT_URL: ${KC_URL}/realms/kafka/protocol/openid-connect/token
     KAFKA_LISTENER_NAME_CONTROLLER_OAUTHBEARER_SASL_OAUTHBEARER_EXPECTED_ISSUER: ${KC_URL}/realms/kafka
     KAFKA_LISTENER_NAME_CONTROLLER_OAUTHBEARER_SASL_OAUTHBEARER_EXPECTED_AUDIENCE: account
 
     # OAuth2 JWKS Endpoint 配置 ( Internal 监听器 )
-    KAFKA_LISTENER_NAME_INTERNAL_OAUTHBEARER_SASL_JAAS_CONFIG: org.apache.kafka.common.security.oauthbearer.OAuthBearerLoginModule required clientId="${KC_CLIENT_ID}" clientSecret="${KC_CLIENT_SECRET}";
+    KAFKA_LISTENER_NAME_INTERNAL_OAUTHBEARER_SASL_JAAS_CONFIG: org.apache.kafka.common.security.oauthbearer.OAuthBearerLoginModule required clientId="${BROKER_CLIENT_ID}" clientSecret="${BROKER_CLIENT_SECRET}";
     KAFKA_LISTENER_NAME_INTERNAL_OAUTHBEARER_SASL_OAUTHBEARER_JWKS_ENDPOINT_URL: ${KC_URL}/realms/kafka/protocol/openid-connect/certs
     KAFKA_LISTENER_NAME_INTERNAL_OAUTHBEARER_SASL_OAUTHBEARER_TOKEN_ENDPOINT_URL: ${KC_URL}/realms/kafka/protocol/openid-connect/token
     KAFKA_LISTENER_NAME_INTERNAL_OAUTHBEARER_SASL_OAUTHBEARER_EXPECTED_ISSUER: ${KC_URL}/realms/kafka
     KAFKA_LISTENER_NAME_INTERNAL_OAUTHBEARER_SASL_OAUTHBEARER_EXPECTED_AUDIENCE: account
 
     # OAuth2 JWKS Endpoint 配置 ( External 监听器 )
-    KAFKA_LISTENER_NAME_EXTERNAL_OAUTHBEARER_SASL_JAAS_CONFIG: org.apache.kafka.common.security.oauthbearer.OAuthBearerLoginModule required clientId="${KC_CLIENT_ID}" clientSecret="${KC_CLIENT_SECRET}";
+    KAFKA_LISTENER_NAME_EXTERNAL_OAUTHBEARER_SASL_JAAS_CONFIG: org.apache.kafka.common.security.oauthbearer.OAuthBearerLoginModule required clientId="${BROKER_CLIENT_ID}" clientSecret="${BROKER_CLIENT_SECRET}";
     KAFKA_LISTENER_NAME_EXTERNAL_OAUTHBEARER_SASL_OAUTHBEARER_JWKS_ENDPOINT_URL: ${KC_URL}/realms/kafka/protocol/openid-connect/certs
     KAFKA_LISTENER_NAME_EXTERNAL_OAUTHBEARER_SASL_OAUTHBEARER_TOKEN_ENDPOINT_URL: ${KC_URL}/realms/kafka/protocol/openid-connect/token
     KAFKA_LISTENER_NAME_EXTERNAL_OAUTHBEARER_SASL_OAUTHBEARER_EXPECTED_ISSUER: ${KC_URL}/realms/kafka
@@ -85,36 +82,10 @@ x-kafka-common: &kafka-common
     - ./certs:/etc/kafka/certs:ro
 
 networks:
-  kafka_net:
-    driver: bridge
+  jrmarcco_net:
+    external: true
 
 services:
-  # OAuth2 授权服务器 ( Keycloak )
-  keycloak:
-    image: quay.io/keycloak/keycloak:latest
-    hostname: keycloak
-    container_name: keycloak
-    restart: unless-stopped
-    ports:
-      - "8080:8080"
-    environment:
-      KC_BOOTSTRAP_ADMIN_USERNAME: admin
-      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
-      KC_HOSTNAME_STRICT: false
-      KC_HTTP_ENABLED: true
-      KC_HEALTH_ENABLED: true
-    command:
-      - start
-    healthcheck:
-      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/9000 && echo -e 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && cat <&3 | grep -q '\"status\": \"UP\"'"]
-      interval: 10s
-      timeout: 5s
-      retries: 30
-    volumes:
-      - ./keycloak-data:/opt/keycloak/data
-    networks:
-      - kafka_net
-
   kafka-1:
     <<: *kafka-common
     hostname: kafka-1
@@ -170,7 +141,7 @@ services:
     container_name: kafka-ui
     restart: unless-stopped
     ports:
-      - "8888:8080"
+      - "18081:8080"
     environment:
       DYNAMIC_CONFIG_ENABLED: true
       KAFKA_CLUSTERS_0_NAME: kafka-cluster
@@ -179,9 +150,9 @@ services:
       # OAuth2 配置
       KAFKA_CLUSTERS_0_PROPERTIES_SECURITY_PROTOCOL: SASL_SSL
       KAFKA_CLUSTERS_0_PROPERTIES_SASL_MECHANISM: OAUTHBEARER
-      KAFKA_CLUSTERS_0_PROPERTIES_SASL_JAAS_CONFIG: org.apache.kafka.common.security.oauthbearer.OAuthBearerLoginModule required clientId="kafka-ui-client" clientSecret="${KAFKA_UI_CLIENT_SECRET:-kafka-ui-secret}";
+      KAFKA_CLUSTERS_0_PROPERTIES_SASL_JAAS_CONFIG: org.apache.kafka.common.security.oauthbearer.OAuthBearerLoginModule required clientId="${UI_CLIENT_ID}" clientSecret="${UI_CLIENT_SECRET}";
       KAFKA_CLUSTERS_0_PROPERTIES_SASL_LOGIN_CALLBACK_HANDLER_CLASS: org.apache.kafka.common.security.oauthbearer.secured.OAuthBearerLoginCallbackHandler
-      KAFKA_CLUSTERS_0_PROPERTIES_SASL_OAUTHBEARER_TOKEN_ENDPOINT_URL: http://keycloak:8080/realms/kafka/protocol/openid-connect/token
+      KAFKA_CLUSTERS_0_PROPERTIES_SASL_OAUTHBEARER_TOKEN_ENDPOINT_URL: ${KC_URL}/realms/kafka/protocol/openid-connect/token
 
       # SSL 配置
       KAFKA_CLUSTERS_0_PROPERTIES_SSL_TRUSTSTORE_LOCATION: /etc/kafka/certs/kafka.client.truststore.jks
@@ -189,20 +160,17 @@ services:
       KAFKA_CLUSTERS_0_PROPERTIES_SSL_ENDPOINT_IDENTIFICATION_ALGORITHM: ""
 
       # JVM 配置（允许访问 Keycloak URL）
-      JAVA_OPTS: -Dorg.apache.kafka.sasl.oauthbearer.allowed.urls=http://keycloak:8080
-
+      JAVA_OPTS: -Dorg.apache.kafka.sasl.oauthbearer.allowed.urls=${KC_URL}/realms/kafka/protocol/openid-connect/certs,${KC_URL}/realms/kafka/protocol/openid-connect/token
     volumes:
       - ./certs:/etc/kafka/certs:ro
     networks:
-      - kafka_net
+      - jrmarcco_net
     depends_on:
       kafka-1:
         condition: service_healthy
       kafka-2:
         condition: service_healthy
       kafka-3:
-        condition: service_healthy
-      keycloak:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080/actuator/health || exit 1"]
