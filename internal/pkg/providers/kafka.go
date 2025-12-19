@@ -161,8 +161,21 @@ type kafkaTLSConfig struct {
 }
 
 type kafkaSaslConfig struct {
+	// 认证机制类型: "scram" (默认) 或 "oauth"
+	Mechanism string `mapstructure:"mechanism"`
+
+	// SCRAM 认证配置
 	Username string `mapstructure:"username"`
 	Password string `mapstructure:"password"`
+
+	// OAuth 认证配置
+	OAuth kafkaOAuthConfig `mapstructure:"oauth"`
+}
+
+type kafkaOAuthConfig struct {
+	Endpoint     string `mapstructure:"endpoint"`
+	ClientID     string `mapstructure:"client_id"`
+	ClientSecret string `mapstructure:"client_secret"`
 }
 
 // loadKafkaConfig 加载 Kafka 配置。
@@ -197,25 +210,64 @@ func configureKafkaTLS(tlsCfg kafkaTLSConfig, logger *zap.Logger) (*tls.Config, 
 	return tlsConf, nil
 }
 
-// configureKafkaSasl 配置 SASL/SCRAM-SHA-256 认证。
+// configureKafkaSasl 配置 SASL 认证机制。
 func configureKafkaSasl(saslCfg kafkaSaslConfig, logger *zap.Logger) (sasl.Mechanism, error) {
+	// 默认使用 SCRAM 认证
+	mechanism := saslCfg.Mechanism
+	if mechanism == "" {
+		mechanism = "scram"
+	}
+
+	switch mechanism {
+	case "scram":
+		return configureKafkaSaslScram(saslCfg, logger)
+	case "oauth":
+		return configureKafkaSaslOAuth(saslCfg.OAuth, logger)
+	default:
+		return nil, fmt.Errorf("unsupported SASL mechanism: %s", mechanism)
+	}
+}
+
+// configureKafkaSaslScram 配置 SASL/SCRAM-SHA-256 认证。
+func configureKafkaSaslScram(saslCfg kafkaSaslConfig, logger *zap.Logger) (sasl.Mechanism, error) {
 	if saslCfg.Username == "" || saslCfg.Password == "" {
-		return nil, errors.New("username and password are required")
+		return nil, errors.New("username and password are required for SCRAM authentication")
 	}
 
 	mechanism, err := scram.Mechanism(scram.SHA256, saslCfg.Username, saslCfg.Password)
 	if err != nil {
 		logger.Error(
-			"[synp-ioc-kafka] failed to create SASL mechanism",
+			"[synp-ioc-kafka] failed to create SASL/SCRAM mechanism",
 			zap.String("username", saslCfg.Username),
 			zap.Error(err),
 		)
-		return nil, fmt.Errorf("failed to create SASL mechanism: %w", err)
+		return nil, fmt.Errorf("failed to create SASL/SCRAM mechanism: %w", err)
 	}
 
 	logger.Info(
 		"[synp-ioc-kafka] successfully configured SASL/SCRAM-SHA-256 for kafka",
 		zap.String("username", saslCfg.Username),
+	)
+
+	return mechanism, nil
+}
+
+// configureKafkaSaslOAuth 配置 SASL/OAUTHBEARER 认证。
+func configureKafkaSaslOAuth(oauthCfg kafkaOAuthConfig, logger *zap.Logger) (sasl.Mechanism, error) {
+	if oauthCfg.Endpoint == "" || oauthCfg.ClientID == "" || oauthCfg.ClientSecret == "" {
+		return nil, errors.New("token_endpoint, client_id and client_secret are required for OAuth authentication")
+	}
+
+	mechanism := NewKafkaOAuthMechanism(
+		oauthCfg.Endpoint,
+		oauthCfg.ClientID,
+		oauthCfg.ClientSecret,
+	)
+
+	logger.Info(
+		"[synp-ioc-kafka] successfully configured SASL/OAUTHBEARER for kafka",
+		zap.String("token_endpoint", oauthCfg.Endpoint),
+		zap.String("client_id", oauthCfg.ClientID),
 	)
 
 	return mechanism, nil

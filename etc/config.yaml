@@ -86,34 +86,48 @@ kafka:
     # CA 证书文件路径（必需）
     ca_file: |
       -----BEGIN CERTIFICATE-----
-      MIIDqTCCApGgAwIBAgIUPF/KxKKzZ4JeHrzi8NS6Ue613lgwDQYJKoZIhvcNAQEL
+      MIIDqTCCApGgAwIBAgIUJ3ImLqactKWuyyywqOkFSnbVy8AwDQYJKoZIhvcNAQEL
       BQAwZDERMA8GA1UEAwwIa2Fma2EtY2ExDjAMBgNVBAsMBUthZmthMQ4wDAYDVQQK
       DAVLYWZrYTEQMA4GA1UEBwwHQmVpamluZzEQMA4GA1UECAwHQmVpamluZzELMAkG
-      A1UEBhMCQ04wHhcNMjUxMjEwMTQ1NDM2WhcNMzUxMjA4MTQ1NDM2WjBkMREwDwYD
+      A1UEBhMCQ04wHhcNMjUxMjE5MDkwNDAwWhcNMzUxMjE3MDkwNDAwWjBkMREwDwYD
       VQQDDAhrYWZrYS1jYTEOMAwGA1UECwwFS2Fma2ExDjAMBgNVBAoMBUthZmthMRAw
       DgYDVQQHDAdCZWlqaW5nMRAwDgYDVQQIDAdCZWlqaW5nMQswCQYDVQQGEwJDTjCC
-      ASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAJ434r1ZqU9zaatX/IZXJkin
-      Rs3oGlE2z2/Kg1yVF7L6ljzu5jzkW17YX2vvZbjG3/PwtwnDD03h7vl9Gysecavs
-      TsMIHd+Xx3B0sXqtVyIpQrbnxQRHmVO6erNh5QQXYP7HSI5dRRctCfLUYAfq8xh3
-      hjlMAGcueyRP3+qxd1E47/+v7hgZks5ru1+Sc7i5LKAgl8LY3YUQwf5Z9DEhd8OB
-      dOdCleFuOwVIHi7c08j0BP6MeWI0uA44t1CWkCL0TPg00tnUyroQGhJ5Y7FP/q3M
-      s21xYh4ke/oQfT9FTs11PHwNWdMm0WSrE7MlxSS/LvVutbOobGFdcENTyA0UzgsC
-      AwEAAaNTMFEwHQYDVR0OBBYEFLhhsWiRDVxeWuh+DqqeZBGEUaEQMB8GA1UdIwQY
-      MBaAFLhhsWiRDVxeWuh+DqqeZBGEUaEQMA8GA1UdEwEB/wQFMAMBAf8wDQYJKoZI
-      hvcNAQELBQADggEBAB2w3yeCsyflzXC4QuJFnf37D2RgmXtHqMeOlbhBrAne9d5t
-      q2d+eEdYHF/+JG456QC0kGnMptWidFVc8Z0lJdyTdYZTWxwjh5uSvkerVFAASzvc
-      0hmKyXG47GsXVNTYWpcddrne05YKw/mofE8ZpB5eX63ooIQxoVP6JzaXpW52mHXe
-      5bfGJuK/p33jf7n0yTOQtLOCG2Z3u2DdlK08NPQEpfm9fXoCkiAoeurVQ0TBnOME
-      0AUdUnfa72a8X+U7UR/nVSFN/u3WmIg4VxGnSS7G6OOA2JGpzchw+15hMdfqiDSG
-      8QGG3ZuiTumyXbGW1Uo3KlJceGle1VNSFQCU0Ag=
+      ASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMAaH/zos++sPjXZtdtkTIgL
+      yTiIyqfNC5CNReyY++x03XTPomlRDK8tXUueeE6UaMN0VufjqNpvDF1XeWRzKnWz
+      sWDdz668G69ZwGMdQfN9GbvQO3wo/3ngYH2xyRgSJqIvz25sO4w0tKVxqognd35J
+      +RYnmRicbO3ena99giORFkIkVDz9gd6HRZufY/nd0Nn22OhHr3enGqvBz46+FOJo
+      dJGjAnStuay7CuHg2ODJniKPQSe30FxEisc1o3ox5XGlKZDfQ657XdPekxrKEMOP
+      gIIdLl9Ted/JStugdWLrDIt1GzXSLZODE6NSFaJnT2WeUbi0ebzOYMEOoXsih1UC
+      AwEAAaNTMFEwHQYDVR0OBBYEFMUY8vm2vJbS2Etf0W8rM4jj6ghwMB8GA1UdIwQY
+      MBaAFMUY8vm2vJbS2Etf0W8rM4jj6ghwMA8GA1UdEwEB/wQFMAMBAf8wDQYJKoZI
+      hvcNAQELBQADggEBAK8ocgom4e5lQ2+WaeBFWaz4agdAPBXmQsvTfIx5bu9GmOVd
+      3eVMfukMTy2L6EGAE3lWX5YIjY+v7mzXAXUASrazy+gpnBrxf6weFberFrE5H6h+
+      quveRLWrWJ4/ecxw/qvx9USqOmGfY3kiHKvpJTRYxALIzyaSHhkhjn6q48XZ1vJq
+      k+90VwQZQq1U1QYiAdHlmPRJP+Vbu8UUwS81Rj8lnOW2TatvHVm8lMRSvJ4W54T9
+      iu1+WL7MIopqT3dA+XmXFTaRegEmSbG838KiLz0E9MyVwDhX7JM1RJBBJVzdIle+
+      6Z4w5y2ZrJTh7DOoK1JIQUXOAUi+t7HLg1lPBt8=
       -----END CERTIFICATE-----
-
   # SASL 配置
+  # 支持两种认证机制：
+  # 1. SCRAM-SHA-256 (默认)
+  # 2. OAUTHBEARER
   sasl:
-    username: "synp"
-    password: "synp-secret"
+    # 认证机制类型 (可选，默认为 "scram")
+    mechanism: "oauth"  # 或 "scram"
+
+    # SCRAM 认证配置 (当 mechanism 为 "scram" 或未设置时使用)
+    # username: "synp"
+    # password: "synp-secret"
     # 提示：建议使用环境变量存储密码
     # password: "${KAFKA_PASSWORD}"
+
+    # OAuth 认证配置 (当 mechanism 为 "oauth" 时使用)
+    oauth:
+      endpoint: "http://192.168.3.3:18080/realms/kafka/protocol/openid-connect/token"
+      client_id: "kafka-client"
+      client_secret: "b7rQYTc0y3eqDkGXFYD2UIPjYJeFCaAC"
+      # 提示：建议使用环境变量存储敏感信息
+      # client_secret: "${KAFKA_OAUTH_CLIENT_SECRET}"
 
 jwt:
   issuer: "hermet-access"
