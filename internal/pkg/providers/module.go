@@ -13,13 +13,13 @@ import (
 var (
 	ZapLoggerFxModule       = fx.Module("zap-logger", fx.Provide(newLogger))
 	RedisFxModule           = fx.Module("redis", fx.Provide(newRedisCmdable))
-	KafkaFxModule           = fx.Module("kafka", fx.Provide(newKafkaClient))
 	CodecFxModule           = fx.Module("codec", fx.Provide(newCodec))
 	MessagePushFuncFxModule = fx.Module("message-push-func", fx.Provide(message.DefaultPushFunc))
 	RetransmitFxModule      = fx.Module("retransmit", fx.Provide(newRetransmitManager))
 )
 
 var (
+	KafkaFxModule         = fx.Module("kafka", fx.Provide(newKafkaClient))
 	KafkaProducerFxModule = fx.Module(
 		"kafka-producer",
 		fx.Provide(
@@ -29,7 +29,6 @@ var (
 			),
 		),
 	)
-
 	KafkaConsumerFxModule = fx.Module(
 		"kafka-consumer",
 		fx.Provide(
@@ -40,7 +39,9 @@ var (
 			newKafkaConsumers,
 		),
 	)
+)
 
+var (
 	ValidatorFxModule = fx.Module(
 		"validator",
 		fx.Provide(

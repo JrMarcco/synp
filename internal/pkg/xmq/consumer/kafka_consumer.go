@@ -13,24 +13,24 @@ import (
 
 const defaultMessageChanSize = 1024
 
-// KafkaReaderFactory 是创建 kafka Reader 的工厂函数。
-type KafkaReaderFactory func(topic string, groupId string) *kafka.Reader
+// KafkaReaderCreateFunc 是创建 kafka Reader 的工厂函数。
+type KafkaReaderCreateFunc func(topic string, groupId string) *kafka.Reader
 
 var _ ConsumerFactory = (*KafkaConsumerFactory)(nil)
 
 // KafkaConsumerFactory 是 kafka 消费者工厂。
 // 负责创建 kafka 消费者。
 type KafkaConsumerFactory struct {
-	readerFactory KafkaReaderFactory
+	readerCreateFunc KafkaReaderCreateFunc
 }
 
 func (f *KafkaConsumerFactory) NewConsumer(topic, groupID string) (Consumer, error) {
-	return NewKafkaConsumer(topic, groupID, f.readerFactory), nil
+	return NewKafkaConsumer(topic, groupID, f.readerCreateFunc), nil
 }
 
-func NewKafkaConsumerFactory(readerFactory KafkaReaderFactory) *KafkaConsumerFactory {
+func NewKafkaConsumerFactory(readerCreateFunc KafkaReaderCreateFunc) *KafkaConsumerFactory {
 	return &KafkaConsumerFactory{
-		readerFactory: readerFactory,
+		readerCreateFunc: readerCreateFunc,
 	}
 }
 
@@ -129,10 +129,10 @@ func (c *KafkaConsumer) Close() error {
 	return err
 }
 
-func NewKafkaConsumer(topic, groupID string, readerFactory KafkaReaderFactory) *KafkaConsumer {
+func NewKafkaConsumer(topic, groupID string, readerCreateFunc KafkaReaderCreateFunc) *KafkaConsumer {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	reader := readerFactory(topic, groupID)
+	reader := readerCreateFunc(topic, groupID)
 	consumer := &KafkaConsumer{
 		topic:   topic,
 		groupID: groupID,

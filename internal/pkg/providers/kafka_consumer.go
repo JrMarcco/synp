@@ -1,21 +1,27 @@
 package providers
 
 import (
+	"fmt"
+
 	pkgconsumer "github.com/jrmarcco/synp/internal/pkg/xmq/consumer"
 	"github.com/jrmarcco/synp/internal/ws/gateway"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 )
 
-func newKafkaConsumers(consumerFactory pkgconsumer.ConsumerFactory, logger *zap.Logger) map[string]*gateway.Consumer {
+func newKafkaConsumers(consumerFactory pkgconsumer.ConsumerFactory, logger *zap.Logger) (map[string]*gateway.Consumer, error) {
 	consumers := make(map[string]*gateway.Consumer)
 
-	consumers[gateway.EventPushMessage] = pushMessageConsumer(consumerFactory, logger)
+	pushMessageConsumer, err := pushMessageConsumer(consumerFactory, logger)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create push message consumer: %w", err)
+	}
+	consumers[gateway.EventPushMessage] = pushMessageConsumer
 
-	return consumers
+	return consumers, err
 }
 
-func pushMessageConsumer(consumerFactory pkgconsumer.ConsumerFactory, logger *zap.Logger) *gateway.Consumer {
+func pushMessageConsumer(consumerFactory pkgconsumer.ConsumerFactory, logger *zap.Logger) (*gateway.Consumer, error) {
 	type consumerConfig struct {
 		Topic      string `mapstructure:"topic"`
 		GroupID    string `mapstructure:"group_id"`
@@ -24,7 +30,7 @@ func pushMessageConsumer(consumerFactory pkgconsumer.ConsumerFactory, logger *za
 
 	cfg := consumerConfig{}
 	if err := viper.UnmarshalKey("synp.gateway.consumer.event_message_downstream", &cfg); err != nil {
-		panic(err)
+		return nil, fmt.Errorf("failed to unmarshal push message consumer config: %w", err)
 	}
 
 	return gateway.NewConsumer(
@@ -33,5 +39,5 @@ func pushMessageConsumer(consumerFactory pkgconsumer.ConsumerFactory, logger *za
 		cfg.GroupID,
 		cfg.Partitions,
 		logger,
-	)
+	), nil
 }

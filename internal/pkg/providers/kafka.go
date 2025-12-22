@@ -20,12 +20,15 @@ import (
 type kafkaFxResult struct {
 	fx.Out
 
-	Writer        *kafka.Writer
-	ReaderFactory consumer.KafkaReaderFactory
+	Writer           *kafka.Writer
+	ReaderCreateFunc consumer.KafkaReaderCreateFunc
 }
 
 func newKafkaClient(zapLogger *zap.Logger, lifecycle fx.Lifecycle) (kafkaFxResult, error) {
-	cfg := loadKafkaConfig()
+	cfg, err := loadKafkaConfig()
+	if err != nil {
+		return kafkaFxResult{}, err
+	}
 
 	// 配置 TLS。
 	tlsConfig, err := configureKafkaTLS(cfg.TLS, zapLogger)
@@ -39,9 +42,6 @@ func newKafkaClient(zapLogger *zap.Logger, lifecycle fx.Lifecycle) (kafkaFxResul
 		return kafkaFxResult{}, err
 	}
 
-	// 创建 Transport。
-	transport := createKafkaTransport(tlsConfig, saslMechanism)
-
 	// 创建 Writer（Producer）。
 	writer := &kafka.Writer{
 		Addr:         kafka.TCP(cfg.Brokers...),
@@ -54,14 +54,16 @@ func newKafkaClient(zapLogger *zap.Logger, lifecycle fx.Lifecycle) (kafkaFxResul
 		WriteTimeout: cfg.Producer.WriteTimeout,
 		RequiredAcks: getKafkaRequiredAcks(cfg.Producer.RequiredAcks),
 		Async:        false, // 同步模式
-		Transport:    transport,
+		Transport: &kafka.Transport{
+			TLS:  tlsConfig,
+			SASL: saslMechanism,
+		},
 	}
 
 	// 如果启用幂等性，设置为精确一次语义。
 	if cfg.Producer.IdempotentEnabled {
 		writer.RequiredAcks = kafka.RequireAll
 	}
-
 	zapLogger.Info(
 		"[synp-ioc-kafka] successfully created kafka writer",
 		zap.Strings("brokers", cfg.Brokers),
@@ -119,8 +121,8 @@ func newKafkaClient(zapLogger *zap.Logger, lifecycle fx.Lifecycle) (kafkaFxResul
 	})
 
 	return kafkaFxResult{
-		Writer:        writer,
-		ReaderFactory: readerFactory,
+		Writer:           writer,
+		ReaderCreateFunc: readerFactory,
 	}, nil
 }
 
@@ -179,12 +181,12 @@ type kafkaOAuthConfig struct {
 }
 
 // loadKafkaConfig 加载 Kafka 配置。
-func loadKafkaConfig() *kafkaConfig {
+func loadKafkaConfig() (*kafkaConfig, error) {
 	cfg := &kafkaConfig{}
 	if err := viper.UnmarshalKey("kafka", cfg); err != nil {
-		panic(fmt.Errorf("failed to unmarshal kafka config: %w", err))
+		return nil, fmt.Errorf("failed to unmarshal kafka config: %w", err)
 	}
-	return cfg
+	return cfg, nil
 }
 
 // configureKafkaTLS 配置 TLS。
@@ -206,13 +208,12 @@ func configureKafkaTLS(tlsCfg kafkaTLSConfig, logger *zap.Logger) (*tls.Config, 
 	tlsConf.RootCAs = caCertPool
 
 	logger.Info("[synp-ioc-kafka] successfully configured TLS for kafka")
-
 	return tlsConf, nil
 }
 
 // configureKafkaSasl 配置 SASL 认证机制。
 func configureKafkaSasl(saslCfg kafkaSaslConfig, logger *zap.Logger) (sasl.Mechanism, error) {
-	// 默认使用 SCRAM 认证
+	// 默认使用 SCRAM 认证。
 	mechanism := saslCfg.Mechanism
 	if mechanism == "" {
 		mechanism = "scram"
@@ -301,13 +302,4 @@ func getKafkaRequiredAcks(acks int) kafka.RequiredAcks {
 	default:
 		return kafka.RequireAll
 	}
-}
-
-// createKafkaTransport 创建带有 TLS 和 SASL 的 Transport。
-func createKafkaTransport(tlsConfig *tls.Config, saslMechanism sasl.Mechanism) *kafka.Transport {
-	transport := &kafka.Transport{
-		TLS:  tlsConfig,
-		SASL: saslMechanism,
-	}
-	return transport
 }

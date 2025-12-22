@@ -21,7 +21,7 @@ func (app *app) Start() error {
 }
 
 func (app *app) Stop() error {
-	return app.wsSvr.Shutdown()
+	return app.wsSvr.GracefulShutdown()
 }
 
 type appFxParams struct {
