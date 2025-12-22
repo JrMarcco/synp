@@ -53,7 +53,6 @@ redis:
   password: "<passwd>"
 
 # Kafka 配置
-# 使用 SASL/SCRAM-SHA-256 + TLS 认证
 kafka:
   # Kafka Broker
   brokers:
