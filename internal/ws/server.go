@@ -254,7 +254,7 @@ func (s *Server) handleConn(conn net.Conn) {
 // consumePushMessage 消费 push message 事件。
 func (s *Server) consumePushMessage(_ context.Context, msg *xmq.Message) error {
 	pushMsg := &messagev1.PushMessage{}
-	// 这里是 unmarshal 后端 ( 业务服务端 ) 推送到消息队列的消息。
+	// 后端 ( 业务服务端 ) 推送到消息队列的消息必须使用 json 格式，
 	// 所以直接使用 json 进行解码即可。
 	if err := json.Unmarshal(msg.Val, pushMsg); err != nil {
 		s.logger.Error(
