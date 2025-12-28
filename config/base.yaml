@@ -1,0 +1,55 @@
+profile:
+  env: "dev"
+
+synp:
+  # WebSocket 配置
+  websocket:
+    host: "0.0.0.0"
+    port: 17001
+    compression:
+      enabled: true
+      # 服务端压缩时使用的滑动窗口大小 取值范围: 8-15 = 2^8 - 2^15 = 256B - 32KB
+      server_max_window_bits: 15
+      server_no_context_takeover: false
+      # 客户端压缩时使用的滑动窗口大小 取值范围: 8-15 = 2^8 - 2^15 = 256B - 32KB
+      client_max_window_bits: 15
+      client_no_context_takeover: false
+      level: 6
+
+  # 编解码器配置 ( json / proto )
+  codec:
+    type: "json"
+
+  # 连接配置
+  conn:
+    # 连接生命周期处理器配置
+    handler:
+      cache_request_timeout: 10s
+      cache_expiration: 10s
+
+    # 连接管理器配置
+    manager:
+      read_timeout: 15s
+      write_timeout: 10s
+      init_retry_interval: 1s
+      max_retry_interval: 5s
+      max_retry_count: 3
+      send_buffer_size: 256
+      receive_buffer_size: 256
+      close_timeout: 1s
+
+  # 网关事件消费者配置
+  gateway:
+    consumer:
+      # downstream 消息消费者
+      event_message_downstream:
+        topic: "event.message.downstream"
+        group_id: "synp-gateway-downstream"
+        partitions: 6
+
+jwt:
+  issuer: "hermet-access"
+  public: |
+    -----BEGIN PUBLIC KEY-----
+    MCowBQYDK2VwAyEA818wiIDR2aqxvLKcyQL2qvVCYlSs2A/izQi/K109rlU=
+    -----END PUBLIC KEY-----

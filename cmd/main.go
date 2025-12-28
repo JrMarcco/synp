@@ -1,12 +1,13 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/jrmarcco/synp/internal/app"
 	"github.com/jrmarcco/synp/internal/pkg/providers"
 	"github.com/jrmarcco/synp/internal/ws"
 	"github.com/jrmarcco/synp/internal/ws/conn"
 	"github.com/jrmarcco/synp/internal/ws/conn/lifecycle"
-	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"go.uber.org/fx"
 	"go.uber.org/fx/fxevent"
@@ -14,7 +15,9 @@ import (
 )
 
 func main() {
-	initViper()
+	if err := loadConfig(); err != nil {
+		panic(err)
+	}
 
 	fx.New(
 		fx.WithLogger(func(logger *zap.Logger) fxevent.Logger {
@@ -61,13 +64,23 @@ func main() {
 	).Run()
 }
 
-func initViper() {
-	configFile := pflag.String("config", "etc/config.yaml", "path to config file")
-	pflag.Parse()
-
-	viper.SetConfigFile(*configFile)
+func loadConfig() error {
+	viper.AddConfigPath("config")
 	viper.SetConfigType("yaml")
+
+	// 读取基础配置
+	viper.SetConfigName("base")
 	if err := viper.ReadInConfig(); err != nil {
-		panic(err)
+		return fmt.Errorf("failed to read base config: %w", err)
 	}
+
+	subConfigNames := []string{"redis", "kafka"}
+	for _, subConfigName := range subConfigNames {
+		viper.SetConfigName(subConfigName)
+		if err := viper.MergeInConfig(); err != nil {
+			return fmt.Errorf("failed to merge %s config: %w", subConfigName, err)
+		}
+	}
+
+	return nil
 }

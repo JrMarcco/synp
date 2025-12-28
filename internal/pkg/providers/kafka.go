@@ -24,6 +24,60 @@ type kafkaFxResult struct {
 	ReaderCreateFunc consumer.KafkaReaderCreateFunc
 }
 
+type kafkaConfig struct {
+	Brokers []string `mapstructure:"brokers"`
+
+	Producer kafkaProducerConfig `mapstructure:"producer"`
+	Consumer kafkaConsumerConfig `mapstructure:"consumer"`
+
+	TLS  kafkaTLSConfig  `mapstructure:"tls"`
+	SASL kafkaSaslConfig `mapstructure:"sasl"`
+}
+
+type kafkaProducerConfig struct {
+	// Producer 配置
+	RequiredAcks      int           `mapstructure:"required_acks"`      // -1=all, 0=none, 1=leader
+	Compression       string        `mapstructure:"compression"`        // none, gzip, snappy, lz4, zstd
+	MaxMessageBytes   int           `mapstructure:"max_message_bytes"`  // 最大消息大小，默认 1MB
+	RetryMax          int           `mapstructure:"retry_max"`          // 最大重试次数
+	BatchSize         int           `mapstructure:"batch_size"`         // 批量大小
+	BatchTimeout      time.Duration `mapstructure:"batch_timeout"`      // 批量超时时间（毫秒）
+	WriteTimeout      time.Duration `mapstructure:"write_timeout"`      // 写入超时（毫秒）
+	IdempotentEnabled bool          `mapstructure:"idempotent_enabled"` // 是否启用幂等性
+}
+
+type kafkaConsumerConfig struct {
+	// Consumer 配置
+	ReadTimeout    time.Duration `mapstructure:"read_timeout"`    // 读取超时（毫秒）
+	CommitInterval time.Duration `mapstructure:"commit_interval"` // 提交间隔（毫秒）
+	StartOffset    int64         `mapstructure:"start_offset"`    // 起始 offset，-1=newest, -2=oldest
+	MinBytes       int           `mapstructure:"min_bytes"`       // 最小字节数
+	MaxBytes       int           `mapstructure:"max_bytes"`       // 最大字节数
+	MaxWait        time.Duration `mapstructure:"max_wait"`        // 最大等待时间（毫秒）
+}
+
+type kafkaTLSConfig struct {
+	CA string `mapstructure:"ca"`
+}
+
+type kafkaSaslConfig struct {
+	// 认证机制类型: "scram" (默认) 或 "oauth"
+	Mechanism string `mapstructure:"mechanism"`
+
+	// SCRAM 认证配置
+	Username string `mapstructure:"username"`
+	Password string `mapstructure:"password"`
+
+	// OAuth 认证配置
+	OAuth kafkaOAuthConfig `mapstructure:"oauth"`
+}
+
+type kafkaOAuthConfig struct {
+	Endpoint     string `mapstructure:"endpoint"`
+	ClientID     string `mapstructure:"client_id"`
+	ClientSecret string `mapstructure:"client_secret"`
+}
+
 func newKafkaClient(zapLogger *zap.Logger, lifecycle fx.Lifecycle) (kafkaFxResult, error) {
 	cfg, err := loadKafkaConfig()
 	if err != nil {
@@ -126,60 +180,6 @@ func newKafkaClient(zapLogger *zap.Logger, lifecycle fx.Lifecycle) (kafkaFxResul
 	}, nil
 }
 
-type kafkaConfig struct {
-	Brokers []string `mapstructure:"brokers"`
-
-	Producer kafkaProducerConfig `mapstructure:"producer"`
-	Consumer kafkaConsumerConfig `mapstructure:"consumer"`
-
-	TLS  kafkaTLSConfig  `mapstructure:"tls"`
-	SASL kafkaSaslConfig `mapstructure:"sasl"`
-}
-
-type kafkaProducerConfig struct {
-	// Producer 配置
-	RequiredAcks      int           `mapstructure:"required_acks"`      // -1=all, 0=none, 1=leader
-	Compression       string        `mapstructure:"compression"`        // none, gzip, snappy, lz4, zstd
-	MaxMessageBytes   int           `mapstructure:"max_message_bytes"`  // 最大消息大小，默认 1MB
-	RetryMax          int           `mapstructure:"retry_max"`          // 最大重试次数
-	BatchSize         int           `mapstructure:"batch_size"`         // 批量大小
-	BatchTimeout      time.Duration `mapstructure:"batch_timeout"`      // 批量超时时间（毫秒）
-	WriteTimeout      time.Duration `mapstructure:"write_timeout"`      // 写入超时（毫秒）
-	IdempotentEnabled bool          `mapstructure:"idempotent_enabled"` // 是否启用幂等性
-}
-
-type kafkaConsumerConfig struct {
-	// Consumer 配置
-	ReadTimeout    time.Duration `mapstructure:"read_timeout"`    // 读取超时（毫秒）
-	CommitInterval time.Duration `mapstructure:"commit_interval"` // 提交间隔（毫秒）
-	StartOffset    int64         `mapstructure:"start_offset"`    // 起始 offset，-1=newest, -2=oldest
-	MinBytes       int           `mapstructure:"min_bytes"`       // 最小字节数
-	MaxBytes       int           `mapstructure:"max_bytes"`       // 最大字节数
-	MaxWait        time.Duration `mapstructure:"max_wait"`        // 最大等待时间（毫秒）
-}
-
-type kafkaTLSConfig struct {
-	CAFile string `mapstructure:"ca_file"`
-}
-
-type kafkaSaslConfig struct {
-	// 认证机制类型: "scram" (默认) 或 "oauth"
-	Mechanism string `mapstructure:"mechanism"`
-
-	// SCRAM 认证配置
-	Username string `mapstructure:"username"`
-	Password string `mapstructure:"password"`
-
-	// OAuth 认证配置
-	OAuth kafkaOAuthConfig `mapstructure:"oauth"`
-}
-
-type kafkaOAuthConfig struct {
-	Endpoint     string `mapstructure:"endpoint"`
-	ClientID     string `mapstructure:"client_id"`
-	ClientSecret string `mapstructure:"client_secret"`
-}
-
 // loadKafkaConfig 加载 Kafka 配置。
 func loadKafkaConfig() (*kafkaConfig, error) {
 	cfg := &kafkaConfig{}
@@ -191,7 +191,7 @@ func loadKafkaConfig() (*kafkaConfig, error) {
 
 // configureKafkaTLS 配置 TLS。
 func configureKafkaTLS(tlsCfg kafkaTLSConfig, logger *zap.Logger) (*tls.Config, error) {
-	if tlsCfg.CAFile == "" {
+	if tlsCfg.CA == "" {
 		return nil, errors.New("CA file is required")
 	}
 
@@ -201,7 +201,7 @@ func configureKafkaTLS(tlsCfg kafkaTLSConfig, logger *zap.Logger) (*tls.Config, 
 	}
 
 	caCertPool := x509.NewCertPool()
-	if !caCertPool.AppendCertsFromPEM([]byte(tlsCfg.CAFile)) {
+	if !caCertPool.AppendCertsFromPEM([]byte(tlsCfg.CA)) {
 		logger.Error("[synp-ioc-kafka] failed to append CA certificate to pool for kafka")
 		return nil, fmt.Errorf("failed to append CA certificate to pool for kafka")
 	}
