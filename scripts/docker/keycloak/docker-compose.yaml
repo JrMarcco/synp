@@ -1,6 +1,6 @@
 networks:
   jrmarcco_net:
-    driver: bridge
+    external: true
 
 services:
   # OAuth2 授权服务器 ( Keycloak )
