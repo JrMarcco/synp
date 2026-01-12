@@ -35,7 +35,7 @@ type kafkaConfig struct {
 }
 
 type kafkaProducerConfig struct {
-	// Producer 配置
+	// Producer 配置。
 	RequiredAcks      int           `mapstructure:"required_acks"`      // -1=all, 0=none, 1=leader
 	Compression       string        `mapstructure:"compression"`        // none, gzip, snappy, lz4, zstd
 	MaxMessageBytes   int           `mapstructure:"max_message_bytes"`  // 最大消息大小，默认 1MB
@@ -47,7 +47,7 @@ type kafkaProducerConfig struct {
 }
 
 type kafkaConsumerConfig struct {
-	// Consumer 配置
+	// Consumer 配置。
 	ReadTimeout    time.Duration `mapstructure:"read_timeout"`    // 读取超时（毫秒）
 	CommitInterval time.Duration `mapstructure:"commit_interval"` // 提交间隔（毫秒）
 	StartOffset    int64         `mapstructure:"start_offset"`    // 起始 offset，-1=newest, -2=oldest
@@ -61,14 +61,14 @@ type kafkaTLSConfig struct {
 }
 
 type kafkaSaslConfig struct {
-	// 认证机制类型: "scram" (默认) 或 "oauth"
+	// 认证机制类型: "scram" ( 默认 ) 或 "oauth"。
 	Mechanism string `mapstructure:"mechanism"`
 
 	// SCRAM 认证配置
 	Username string `mapstructure:"username"`
 	Password string `mapstructure:"password"`
 
-	// OAuth 认证配置
+	// OAuth 认证配置。
 	OAuth kafkaOAuthConfig `mapstructure:"oauth"`
 }
 
