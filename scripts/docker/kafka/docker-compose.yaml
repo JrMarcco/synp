@@ -64,7 +64,7 @@ x-kafka-common: &kafka-common
     # 向 Keycloak 请求 Token
     # 获得 Access Token (JWT)
     #
-    # 2. Kafka UI 连接 Broker (EXTERNAL:9092)
+    # 2. Kafka UI 连接 Broker ( EXTERNAL:9092 )
     # 发送 Access Token
     # 等待验证
     #
