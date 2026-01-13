@@ -74,7 +74,7 @@ x-kafka-common: &kafka-common
     # 使用 BROKER_CLIENT_ID + BROKER_CLIENT_SECRET
     # 从 Keycloak 获取 JWKS 公钥
     # 验证 Token 签名
-    # 检查 Token 的 issuer、audience、过期时间
+    # 检查 Token 的 issuer / audience / 过期时间
     # 验证通过，允许连接
     #
     # 4. 后续通信
