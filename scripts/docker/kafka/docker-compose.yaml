@@ -64,7 +64,7 @@ x-kafka-common: &kafka-common
     # 向 Keycloak 请求 Token
     # 获得 Access Token (JWT)
     #
-    # 2. Kafka UI 连接 Broker ( EXTERNAL:9092 )
+    # 2. Kafka UI 连接 Broker (EXTERNAL:9092)
     # 发送 Access Token
     # 等待验证
     #
@@ -74,7 +74,7 @@ x-kafka-common: &kafka-common
     # 使用 BROKER_CLIENT_ID + BROKER_CLIENT_SECRET
     # 从 Keycloak 获取 JWKS 公钥
     # 验证 Token 签名
-    # 检查 Token 的 issuer / audience / 过期时间
+    # 检查 Token 的 issuer、audience、过期时间
     # 验证通过，允许连接
     #
     # 4. 后续通信
@@ -110,6 +110,33 @@ networks:
     external: true
 
 services:
+  # OAuth2 授权服务器 ( Keycloak )
+  keycloak:
+    image: quay.io/keycloak/keycloak:latest
+    hostname: keycloak
+    container_name: keycloak
+    restart: unless-stopped
+    ports:
+      - "18080:8080"
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${BOOTSTRAP_ADMIN_USERNAME:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${BOOTSTRAP_ADMIN_PASSWORD:-admin}
+
+      KC_HOSTNAME_STRICT: false
+      KC_HTTP_ENABLED: true
+      KC_HEALTH_ENABLED: true
+    command:
+      - start
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/9000 && echo -e 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && cat <&3 | grep -q '\"status\": \"UP\"'"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+    volumes:
+      - ./keycloak-data:/opt/keycloak/data
+    networks:
+      - jrmarcco_net
+
   kafka-1:
     <<: *kafka-common
     hostname: kafka-1
@@ -125,6 +152,9 @@ services:
     volumes:
       - ./certs:/etc/kafka/certs:ro
       - ./kafka-1-data:/var/lib/kafka/data
+    depends_on:
+      keycloak:
+        condition: service_healthy
 
   kafka-2:
     <<: *kafka-common
@@ -141,6 +171,9 @@ services:
     volumes:
       - ./certs:/etc/kafka/certs:ro
       - ./kafka-2-data:/var/lib/kafka/data
+    depends_on:
+      keycloak:
+        condition: service_healthy
 
   kafka-3:
     <<: *kafka-common
@@ -157,6 +190,9 @@ services:
     volumes:
       - ./certs:/etc/kafka/certs:ro
       - ./kafka-3-data:/var/lib/kafka/data
+    depends_on:
+      keycloak:
+        condition: service_healthy
 
   # Kafka UI - Web 管理界面
   kafka-ui:
