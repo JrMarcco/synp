@@ -30,7 +30,7 @@ x-kafka-common: &kafka-common
     KAFKA_CONTROLLER_QUORUM_FETCH_TIMEOUT_MS: 5000
     KAFKA_CONTROLLER_QUORUM_REQUEST_TIMEOUT_MS: 5000
 
-    # OAuth2 允许的 URL ( Kafka 3.x 安全限制 )
+    # JVM 配置 ( 允许访问 Keycloak URL )
     KAFKA_OPTS: -Dorg.apache.kafka.sasl.oauthbearer.allowed.urls=${KC_URL}/realms/kafka/protocol/openid-connect/certs,${KC_URL}/realms/kafka/protocol/openid-connect/token
 
     # OAuth2 回调处理器配置
