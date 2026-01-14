@@ -1,10 +1,10 @@
 profile:
-  env: "dev"
+  env: dev
 
 synp:
   # WebSocket 配置
   websocket:
-    host: "0.0.0.0"
+    host: 0.0.0.0
     port: 17001
     compression:
       enabled: true
@@ -18,7 +18,7 @@ synp:
 
   # 编解码器配置 ( json / proto )
   codec:
-    type: "json"
+    type: json
 
   # 连接配置
   conn:
@@ -43,12 +43,12 @@ synp:
     consumer:
       # downstream 消息消费者
       event_message_downstream:
-        topic: "event.message.downstream"
-        group_id: "synp-gateway-downstream"
+        topic: event.message.downstream
+        group_id: synp-gateway-downstream
         partitions: 6
 
 jwt:
-  issuer: "hermet-access"
+  issuer: hermet-access
   public: |
     -----BEGIN PUBLIC KEY-----
     MCowBQYDK2VwAyEA818wiIDR2aqxvLKcyQL2qvVCYlSs2A/izQi/K109rlU=

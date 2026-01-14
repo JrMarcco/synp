@@ -9,7 +9,7 @@ kafka:
   # Producer 配置
   producer:
     required_acks: -1            # all
-    compression: "snappy"        # 使用 snappy 压缩
+    compression: snappy          # 使用 snappy 压缩
     max_message_bytes: 1024000   # 最大消息大小 1024000字节 = 1MB
     retry_max: 3                 # 最大重试次数 3
     batch_size: 100              # 批量大小 100
@@ -68,8 +68,8 @@ kafka:
 
     # OAuth 认证配置 (当 mechanism 为 "oauth" 时使用)
     oauth:
-      endpoint: "http://192.168.3.3:18080/realms/kafka/protocol/openid-connect/token"
-      client_id: "kafka-client"
-      client_secret: "b7rQYTc0y3eqDkGXFYD2UIPjYJeFCaAC"
+      endpoint: http://192.168.3.3:18080/realms/kafka/protocol/openid-connect/token
+      client_id: kafka-client
+      client_secret: b7rQYTc0y3eqDkGXFYD2UIPjYJeFCaAC
       # 提示：建议使用环境变量存储敏感信息
       # client_secret: "${KAFKA_OAUTH_CLIENT_SECRET}"
