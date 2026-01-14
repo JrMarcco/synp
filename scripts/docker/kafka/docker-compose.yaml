@@ -115,7 +115,7 @@ networks:
 services:
   # OAuth2 授权服务器 ( Keycloak )
   keycloak:
-    image: quay.io/keycloak/keycloak:latest
+    image: keycloak/keycloak:latest
     hostname: keycloak
     container_name: keycloak
     restart: unless-stopped
